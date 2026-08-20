@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.astro/
+.wrangler/
+
+# ความลับ ห้ามขึ้น git
+.env
+.env.*
+!.env.example
+
+# ผลลัพธ์การทดสอบ
+e2e/screenshot-*.png

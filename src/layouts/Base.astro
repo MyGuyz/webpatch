@@ -1,0 +1,38 @@
+---
+import '../styles/theme.css';
+import BottomNav from '../components/BottomNav.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = 'แจกแพตช์แปลไทยสำหรับเกมย้อนยุค แปะเองได้ในเบราว์เซอร์' } =
+  Astro.props;
+---
+
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    />
+  </head>
+  <body>
+    <main class="wrap">
+      <slot />
+    </main>
+    <BottomNav />
+  </body>
+</html>

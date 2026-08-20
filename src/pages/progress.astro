@@ -1,0 +1,60 @@
+---
+import Base from '../layouts/Base.astro';
+import { getPublishedGames, PROGRESS_STAGES } from '../lib/games.js';
+
+const games = await getPublishedGames();
+const inProgress = games.filter((g) => g.status === 'wip');
+---
+
+<Base title="กำลังทำอยู่ — เกมไทย" description="ดูความคืบหน้าของเกมที่กำลังแปลอยู่">
+  <h1 class="page-head">กำลังทำอยู่</h1>
+  <p class="muted lead">
+    เกมที่ตัดสินใจลงมือแล้ว — ดูได้เลยว่าตอนนี้แต่ละเกมเดินมาถึงขั้นไหน
+    พอครบทั้ง 5 ขั้นก็จะย้ายไปอยู่หน้าแปะแพตช์
+  </p>
+
+  {
+    inProgress.length === 0 ? (
+      <p class="muted">ตอนนี้ยังไม่มีเกมที่กำลังทำอยู่</p>
+    ) : (
+      <div class="stack">
+        {inProgress.map((game) => (
+          <article class="cart">
+            <div class="cart__label">
+              <span class="tag tag--wip">ขั้น {game.progress_stage}/5</span>
+              <span class="tag tag--console">{game.console?.name ?? '—'}</span>
+            </div>
+            <div class="cart__body">
+              <h2 class="title">{game.title}</h2>
+              <p class="muted stage">{PROGRESS_STAGES[game.progress_stage - 1] ?? ''}</p>
+              {game.description && <p class="desc">{game.description}</p>}
+
+              <div class="bar" role="img" aria-label={`คืบหน้า ${game.progress_percent}%`}>
+                <div class="bar__fill" style={`width:${game.progress_percent}%`}></div>
+              </div>
+              <p class="muted percent">งานแปล {game.progress_percent}%</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    )
+  }
+</Base>
+
+<style>
+  .page-head { font-size: 1.7rem; margin: 20px 0 8px; }
+  .lead { margin: 0 0 16px; }
+  .title { font-size: 1.15rem; }
+  .stage { margin: 2px 0 0; }
+  .desc { font-size: 0.92rem; margin: 10px 0; }
+  .bar {
+    height: 10px;
+    background: var(--surface-sunken);
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    overflow: hidden;
+    margin-top: 12px;
+  }
+  .bar__fill { height: 100%; background: var(--clay); }
+  .percent { margin: 6px 0 0; }
+</style>

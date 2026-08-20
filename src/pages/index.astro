@@ -1,0 +1,122 @@
+---
+import Base from '../layouts/Base.astro';
+import GameCard from '../components/GameCard.astro';
+import { getPublishedGames, getActiveAnnouncement, isUsingSeedData } from '../lib/games.js';
+
+const games = await getPublishedGames();
+const announcement = await getActiveAnnouncement();
+const usingSeed = isUsingSeedData();
+
+const ready = games.filter((g) => g.status === 'ready' || g.status === 'beta');
+const inProgress = games.filter((g) => g.status === 'wip');
+---
+
+<Base title="เกมไทย — แพตช์แปลไทยสำหรับเกมย้อนยุค">
+  <header class="hero cart">
+    <div class="cart__label">
+      <span>PATCH STATION</span>
+    </div>
+    <div class="hero__body">
+      <h1 class="hero__title">เกมไทย</h1>
+      <p class="hero__tag">เล่นเกมที่รักในภาษาที่เข้าใจ</p>
+    </div>
+  </header>
+
+  <div class="stack">
+    {
+      usingSeed && (
+        <p class="note">
+          <strong>โหมดตัวอย่าง</strong> — ยังไม่ได้ตั้งค่า Supabase ข้อมูลที่เห็นเป็นของสมมติ
+        </p>
+      )
+    }
+
+    {
+      announcement && (
+        <section class="cart">
+          <div class="cart__label"><span>ประกาศ</span></div>
+          <div class="cart__body"><p class="announce">{announcement.body}</p></div>
+        </section>
+      )
+    }
+
+    <a class="btn btn--primary" href="/patch">🎮 เลือกเกมแล้วแปะแพตช์เลย</a>
+
+    <section>
+      <h2 class="section-head">ผลงานล่าสุด</h2>
+      {
+        ready.length === 0 ? (
+          <p class="muted">ยังไม่มีเกมที่พร้อมให้แปะ รอติดตามนะครับ</p>
+        ) : (
+          <div class="stack">
+            {ready.map((game) => (
+              <GameCard game={game} href={`/patch?game=${game.id}`} />
+            ))}
+          </div>
+        )
+      }
+    </section>
+
+    {
+      inProgress.length > 0 && (
+        <section>
+          <h2 class="section-head">กำลังแปลอยู่</h2>
+          <div class="stack">
+            {inProgress.map((game) => (
+              <GameCard game={game} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <p class="note note--privacy">
+      🔒 เว็บนี้แจกเฉพาะ<strong>ไฟล์แพตช์</strong> ไม่ได้แจกตัวเกม
+      คุณต้องมีไฟล์เกมต้นฉบับของคุณเอง และไฟล์นั้นจะอยู่ในเครื่องคุณตลอด
+      ไม่ถูกอัปโหลดขึ้นเซิร์ฟเวอร์
+    </p>
+  </div>
+</Base>
+
+<style>
+  .hero {
+    margin: 18px 0 22px;
+    background: linear-gradient(150deg, var(--clay-wash), var(--amber-wash));
+  }
+
+  .hero__body {
+    padding: 30px 20px 34px;
+    text-align: center;
+    /* เส้นสแกนจางๆ ให้ความรู้สึกจอ CRT */
+    background-image: repeating-linear-gradient(
+      180deg,
+      rgba(58, 43, 33, 0.045) 0 2px,
+      transparent 2px 5px
+    );
+  }
+
+  .hero__title {
+    font-size: 2.5rem;
+    font-weight: 600;
+    color: var(--clay-deep);
+    letter-spacing: 0.02em;
+  }
+
+  .hero__tag {
+    margin: 8px 0 0;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  .section-head {
+    font-size: 1.28rem;
+    margin-bottom: 12px;
+    padding-bottom: 7px;
+    border-bottom: 3px dotted var(--edge);
+  }
+
+  .announce {
+    margin: 0;
+    font-size: 0.94rem;
+  }
+</style>

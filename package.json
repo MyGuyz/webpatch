@@ -1,0 +1,36 @@
+{
+  "name": "webpatch",
+  "version": "1.0.0",
+  "description": "เว็บแจกแพตช์แปลไทยสำหรับเกมย้อนยุค แปะเองได้ในเบราว์เซอร์",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "test": "node --test src/patcher/patcher.test.js src/lib/allowed-hosts.test.js",
+    "test:e2e": "node e2e/patch-flow.mjs"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MyGuyz/webpatch.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MyGuyz/webpatch/issues"
+  },
+  "homepage": "https://github.com/MyGuyz/webpatch#readme",
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.2.3",
+    "@supabase/supabase-js": "^2.112.3",
+    "astro": "^7.2.4"
+  },
+  "type": "module",
+  "devDependencies": {
+    "playwright": "^1.62.1"
+  }
+}

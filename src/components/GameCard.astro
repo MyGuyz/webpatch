@@ -1,0 +1,68 @@
+---
+import { STATUS_LABELS } from '../lib/games.js';
+
+interface Props {
+  game: any;
+  href?: string;
+}
+
+const { game, href } = Astro.props;
+const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
+---
+
+<article class="cart game">
+  <div class="cart__label">
+    <span class={`tag ${status.className}`}>{status.text}</span>
+    <span class="tag tag--console">{game.console?.name ?? '—'}</span>
+  </div>
+
+  <div class="cart__body">
+    {
+      game.cover_url && (
+        <img class="game__cover" src={game.cover_url} alt={`ปกเกม ${game.title}`} loading="lazy" />
+      )
+    }
+
+    <h3 class="game__title">{game.title}</h3>
+    {game.subtitle && <p class="muted game__subtitle">{game.subtitle}</p>}
+    {game.description && <p class="game__desc">{game.description}</p>}
+
+    {
+      game.patch_version && (
+        <p class="muted">
+          แพตช์ <strong>{game.patch_version}</strong>
+          {game.patch_updated_at && <> · อัปเดต {game.patch_updated_at}</>}
+        </p>
+      )
+    }
+
+    {href && <a class="btn btn--primary" href={href}>ไปแปะแพตช์</a>}
+  </div>
+</article>
+
+<style>
+  .game__cover {
+    display: block;
+    width: 100%;
+    border-radius: var(--radius-sm);
+    border: 2px solid var(--edge);
+    margin-bottom: 14px;
+  }
+
+  .game__title {
+    font-size: 1.15rem;
+  }
+
+  .game__subtitle {
+    margin: 2px 0 0;
+  }
+
+  .game__desc {
+    margin: 10px 0;
+    font-size: 0.92rem;
+  }
+
+  .btn {
+    margin-top: 14px;
+  }
+</style>

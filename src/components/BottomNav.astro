@@ -1,0 +1,25 @@
+---
+const path = Astro.url.pathname;
+
+const items = [
+  { href: '/', icon: '🏠', label: 'หน้าแรก' },
+  { href: '/patch', icon: '🎮', label: 'แปะแพตช์' },
+  { href: '/progress', icon: '🚧', label: 'กำลังทำ' },
+  { href: '/report-bug', icon: '🐛', label: 'แจ้งบั๊ก' },
+];
+---
+
+<nav class="nav" aria-label="เมนูหลัก">
+  {
+    items.map((item) => (
+      <a
+        class="nav__item"
+        href={item.href}
+        aria-current={path === item.href ? 'page' : undefined}
+      >
+        <span class="nav__icon" aria-hidden="true">{item.icon}</span>
+        <span>{item.label}</span>
+      </a>
+    ))
+  }
+</nav>

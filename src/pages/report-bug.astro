@@ -1,0 +1,23 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="แจ้งบั๊ก — เกมไทย" description="เจอคำแปลผิดหรือเกมค้าง บอกเราได้ที่นี่">
+  <h1 class="page-head">แจ้งบั๊ก</h1>
+
+  <section class="cart">
+    <div class="cart__label"><span>กำลังทำอยู่</span></div>
+    <div class="cart__body">
+      <p>
+        หน้านี้ยังทำไม่เสร็จครับ 🐛 กำลังจะมีฟอร์มให้แจ้งคำแปลผิด ตัวอักษรเพี้ยน
+        หรือเกมค้าง พร้อมแนบภาพหน้าจอได้
+      </p>
+      <a class="btn btn--ghost" href="/">← กลับหน้าแรก</a>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .page-head { font-size: 1.7rem; margin: 20px 0 12px; }
+  .btn { margin-top: 14px; }
+</style>

@@ -1,0 +1,157 @@
+---
+import Base from '../layouts/Base.astro';
+import { getReadyGames, getConsoles, STATUS_LABELS, isUsingSeedData } from '../lib/games.js';
+
+const games = await getReadyGames();
+const consoles = await getConsoles();
+const usingSeed = isUsingSeedData();
+
+const preselectedId = Astro.url.searchParams.get('game');
+
+// เหลือเฉพาะเครื่องที่มีเกมพร้อมแปะจริง จะได้ไม่มีตัวเลือกที่กดแล้วว่างเปล่า
+const consolesWithGames = consoles.filter((c) =>
+  games.some((g) => g.console?.id === c.id)
+);
+---
+
+<Base title="แปะแพตช์ภาษาไทย — เกมไทย" description="เลือกเกม เลือกไฟล์เกมของคุณ กดปุ่มเดียวได้เกมภาษาไทย">
+  <h1 class="page-head">แปะแพตช์ภาษาไทย</h1>
+  <p class="muted lead">
+    เลือกเกม → เลือกไฟล์เกมต้นฉบับของคุณ → กดปุ่มเดียว
+    ได้ไฟล์เกมภาษาไทยกลับไปเล่นเลย ไม่ต้องลงโปรแกรมอะไรเพิ่ม
+  </p>
+
+  <p class="note note--privacy">
+    🔒 ไฟล์เกมของคุณอยู่ในเครื่องคุณตลอด <strong>ไม่ถูกอัปโหลดขึ้นเซิร์ฟเวอร์</strong>{' '}
+    การแปะทำในเบราว์เซอร์ทั้งหมด เราแจกเฉพาะไฟล์แพตช์
+  </p>
+
+  {
+    usingSeed && (
+      <p class="note">
+        <strong>โหมดตัวอย่าง</strong> — ยังไม่ได้ตั้งค่า Supabase
+        เกมที่เห็นเป็นของสมมติและยังไม่มีไฟล์แพตช์จริง กดแปะจะขึ้นข้อความบอกว่ายังไม่มีไฟล์
+      </p>
+    )
+  }
+
+  {
+    games.length === 0 ? (
+      <p class="muted">ยังไม่มีเกมที่พร้อมให้แปะในตอนนี้ รอติดตามนะครับ</p>
+    ) : (
+      <div class="stack">
+        <section class="cart">
+          <div class="cart__label"><span>1 · เลือกเกม</span></div>
+          <div class="cart__body">
+            <label class="field">
+              <span class="field__label">เครื่องเล่น</span>
+              <select id="console-select">
+                <option value="">— ทุกเครื่อง —</option>
+                {consolesWithGames.map((c) => (
+                  <option value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+
+            <label class="field">
+              <span class="field__label">เกม</span>
+              <select id="game-select">
+                <option value="">— เลือกเกม —</option>
+              </select>
+            </label>
+          </div>
+        </section>
+
+        <section class="cart" id="game-info" hidden>
+          <div class="cart__label">
+            <span id="info-status"></span>
+            <span class="tag tag--console" id="info-console"></span>
+          </div>
+          <div class="cart__body">
+            <h2 id="info-title" class="info__title"></h2>
+            <p class="muted" id="info-version"></p>
+            <p id="info-desc" class="info__desc"></p>
+
+            <div class="spec">
+              <span class="field__label">ไฟล์เกมต้นฉบับที่ต้องใช้</span>
+              <p class="mono" id="info-spec"></p>
+            </div>
+          </div>
+        </section>
+
+        <section class="cart" id="step-file" hidden>
+          <div class="cart__label"><span>2 · เลือกไฟล์เกมของคุณ</span></div>
+          <div class="cart__body">
+            <label class="field">
+              <span class="field__label">ไฟล์เกมต้นฉบับ</span>
+              <input type="file" id="source-file" />
+            </label>
+            <p class="muted" id="file-summary"></p>
+          </div>
+        </section>
+
+        <section class="cart" id="step-run" hidden>
+          <div class="cart__label"><span>3 · แปะแล้วดาวน์โหลด</span></div>
+          <div class="cart__body stack">
+            <button class="btn btn--primary" id="apply-btn" disabled>✨ แปะแพตช์ภาษาไทย</button>
+            <button class="btn btn--ghost" id="download-btn" hidden>↓ ดาวน์โหลดไฟล์ภาษาไทย</button>
+            <pre class="log" id="log" aria-live="polite"></pre>
+          </div>
+        </section>
+
+        <p class="note">
+          ไฟล์ใหญ่ (แผ่น PS1/PSP) ใช้เวลาหลายนาทีและกินแรมเยอะ
+          ระหว่างนั้นอย่าปิดแท็บ · เปิดบนคอมพิวเตอร์จะลื่นกว่ามือถือมาก
+        </p>
+      </div>
+    )
+  }
+
+  <script is:inline define:vars={{ gamesJson: JSON.stringify(games), preselectedId }}>
+    window.__GAMES__ = JSON.parse(gamesJson);
+    window.__PRESELECT__ = preselectedId;
+  </script>
+  <script src="../scripts/patch-ui.js"></script>
+</Base>
+
+<style>
+  .page-head {
+    font-size: 1.7rem;
+    margin: 20px 0 8px;
+  }
+
+  .lead {
+    margin: 0 0 16px;
+  }
+
+  .info__title {
+    font-size: 1.2rem;
+  }
+
+  .info__desc {
+    font-size: 0.92rem;
+    white-space: pre-line;
+  }
+
+  .spec {
+    margin-top: 14px;
+    padding: 11px 13px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+  }
+
+  .spec p {
+    margin: 4px 0 0;
+  }
+
+  input[type='file'] {
+    width: 100%;
+    padding: 11px;
+    background: var(--surface-sunken);
+    border: 2px dashed var(--edge);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+</style>
