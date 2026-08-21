@@ -1,4 +1,5 @@
 import { applyPatch } from '../patcher/index.js';
+import { sha1Hex } from '../patcher/sha1.js';
 
 const games = window.__GAMES__ ?? [];
 const preselectId = window.__PRESELECT__;
@@ -112,13 +113,6 @@ function hideDownload() {
 }
 
 // ── ตรวจไฟล์ต้นฉบับ ────────────────────────────────────────
-
-async function sha1Hex(bytes) {
-  const digest = await crypto.subtle.digest('SHA-1', bytes);
-  return Array.from(new Uint8Array(digest))
-    .map((b) => b.toString(16).padStart(2, '0'))
-    .join('');
-}
 
 async function handleFileChosen() {
   hideDownload();

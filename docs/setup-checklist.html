@@ -367,7 +367,7 @@
 </style>
 
 <header class="shell masthead">
-  <p class="eyebrow">คู่มือติดตั้ง · 13 ขั้นตอน</p>
+  <p class="eyebrow">คู่มือติดตั้ง · 14 ขั้นตอน</p>
   <h1>พาตั้งค่า webpatch จนเว็บเปิดได้จริง</h1>
   <p class="standfirst">
     ทำตามทีละข้อ ติ๊กไปเรื่อยๆ ไม่ต้องใช้ command line เลยสักบรรทัด
@@ -377,7 +377,7 @@
 
 <div class="meter">
   <div class="meter__inner">
-    <span class="meter__count" id="count">0 / 13</span>
+    <span class="meter__count" id="count">0 / 14</span>
     <div class="meter__track"><div class="meter__fill" id="fill"></div></div>
     <button class="meter__reset" id="reset" type="button">ล้างติ๊ก</button>
   </div>
@@ -604,7 +604,7 @@
               <tr><td class="mono">status</td><td><code>ready</code> ถ้าแพตช์เสร็จ · <code>wip</code> ถ้ายังทำอยู่</td></tr>
               <tr><td class="mono">patch_url</td><td>ลิงก์ไฟล์แพตช์ (ได้จาก C4)</td></tr>
               <tr><td class="mono">patch_format</td><td><code>ips</code> / <code>bps</code> / <code>ppf</code></td></tr>
-              <tr><td class="mono">source_sha1</td><td>ลายนิ้วมือไฟล์เกมต้นฉบับ 40 ตัวอักษร · เว้นว่างได้ = ไม่ตรวจรุ่น</td></tr>
+              <tr><td class="mono">source_sha1</td><td>ลากไฟล์เกมต้นฉบับลงหน้า <code>/tools/sha1</code> บนเว็บ แล้วคัดลอกค่ามาใส่ · เว้นว่างได้ = ไม่ตรวจรุ่น</td></tr>
               <tr><td class="mono">is_published</td><td><strong>ติ๊กให้เป็น true</strong> ไม่งั้นเว็บจะไม่แสดง</td></tr>
             </tbody>
           </table>
@@ -617,9 +617,27 @@
       </div>
     </article>
 
-    <article class="step" data-id="c4">
+    <article class="step" data-id="c3b">
       <button class="step__head" type="button">
         <span class="step__key">C4</span>
+        <span class="step__title">เปิด repo เป็นสาธารณะ — ทำครั้งเดียว</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <p>repo → <strong>Settings</strong> → เลื่อนล่างสุดถึง <strong>Danger Zone</strong> → <strong>Change visibility</strong> → <strong>Make public</strong></p>
+        <div class="flag flag--trap">
+          <span class="flag__lead">ทำไมต้องเปิด</span>
+          ไฟล์ใน Releases ของ repo ส่วนตัว <strong>ต้องล็อกอินถึงโหลดได้</strong>
+          แต่เว็บดึงไฟล์แบบไม่ล็อกอิน ถ้าไม่เปิดสาธารณะ คนกดแปะแล้วจะขึ้น error 404
+          <br><br>ตรวจแล้วว่าไม่มีความลับอยู่ใน repo — ไม่มีไฟล์ <code>.env</code>
+          และคีย์ Supabase อยู่ใน Cloudflare ไม่ได้อยู่ในโค้ด
+        </div>
+      </div>
+    </article>
+
+    <article class="step" data-id="c4">
+      <button class="step__head" type="button">
+        <span class="step__key">C5</span>
         <span class="step__title">เอาไฟล์แพตช์ขึ้น GitHub Releases</span>
         <span class="step__tick">✓</span>
       </button>
@@ -637,7 +655,7 @@
 
     <article class="step" data-id="c5">
       <button class="step__head" type="button">
-        <span class="step__key">C5</span>
+        <span class="step__key">C6</span>
         <span class="step__title">ลองแปะแพตช์จริง</span>
         <span class="step__tick">✓</span>
       </button>
@@ -658,7 +676,8 @@
           <tr><td>กล่องเหลือง "โหมดตัวอย่าง"</td><td>ตัวแปรผิดช่อง หรือยังไม่ได้ใส่</td><td>ทำ B3 ใหม่ แล้ว deploy ซ้ำ</td></tr>
           <tr><td>error 500</td><td>ใส่ตัวแปรมาแค่ตัวเดียว</td><td>อ่านข้อความบนจอ มันบอกเองว่าขาดตัวไหน</td></tr>
           <tr><td>หน้าแรกว่างทั้งที่ใส่เกมแล้ว</td><td>ลืมติ๊ก <code>is_published</code></td><td>ไปติ๊กในตาราง <code>games</code></td></tr>
-          <tr><td>"ยังไม่มีไฟล์แพตช์ให้โหลด"</td><td><code>patch_url</code> ว่าง</td><td>ทำ C4</td></tr>
+          <tr><td>"ยังไม่มีไฟล์แพตช์ให้โหลด"</td><td><code>patch_url</code> ว่าง</td><td>ทำ C5</td></tr>
+          <tr><td>"ต้นทางไม่สำเร็จ (404)"</td><td>repo ยังเป็น private</td><td>ทำ C4</td></tr>
           <tr><td>"ที่อยู่ไฟล์แพตช์ไม่ถูกต้อง"</td><td>ลิงก์ไม่ได้ชี้ไป GitHub</td><td>ตั้งใจกันไว้เพื่อความปลอดภัย ต้องเป็นลิงก์ GitHub</td></tr>
           <tr><td>"ไฟล์นี้ไม่ตรงรุ่น"</td><td>ไฟล์เกมคนละเวอร์ชันกับที่แพตช์รองรับ</td><td>ถูกแล้ว ระบบกันไม่ให้ได้ไฟล์เสีย</td></tr>
           <tr><td>SQL ขึ้นแดง <code>already exists</code></td><td>รันไฟล์ SQL ซ้ำ</td><td>ไม่เป็นไร ตารางสร้างไปแล้ว ข้ามไป A3</td></tr>

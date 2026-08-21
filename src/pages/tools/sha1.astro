@@ -1,0 +1,96 @@
+---
+import Base from '../../layouts/Base.astro';
+---
+
+<Base
+  title="หาค่า SHA1 ของไฟล์ — เกมไทย"
+  description="ลากไฟล์เกมลงไปแล้วได้ค่า SHA1 สำหรับใส่ในฐานข้อมูล"
+>
+  <h1 class="page-head">หาค่า SHA1 ของไฟล์</h1>
+  <p class="muted lead">
+    เครื่องมือสำหรับคนทำแพตช์ — ใช้หาลายนิ้วมือของไฟล์เกมต้นฉบับ
+    เอาไปใส่ช่อง <span class="mono">source_sha1</span> ในฐานข้อมูล
+    เพื่อให้เว็บตรวจได้ว่าคนที่มาแปะเอาไฟล์ถูกรุ่นมาหรือเปล่า
+  </p>
+
+  <p class="note note--privacy">
+    🔒 คำนวณในเบราว์เซอร์ของคุณล้วนๆ ไฟล์ไม่ถูกส่งขึ้นเซิร์ฟเวอร์
+  </p>
+
+  <section class="cart">
+    <div class="cart__label"><span>เลือกไฟล์</span></div>
+    <div class="cart__body">
+      <label class="field">
+        <span class="field__label">ไฟล์ที่ต้องการหาค่า</span>
+        <input type="file" id="file" />
+      </label>
+      <p class="muted" id="status">ยังไม่ได้เลือกไฟล์</p>
+    </div>
+  </section>
+
+  <section class="cart result" id="result" hidden>
+    <div class="cart__label"><span>ผลลัพธ์</span></div>
+    <div class="cart__body stack">
+      <div>
+        <span class="field__label">ชื่อไฟล์ · ขนาด</span>
+        <p class="muted meta" id="meta"></p>
+      </div>
+
+      <div>
+        <span class="field__label">SHA1</span>
+        <p class="hash mono" id="hash"></p>
+      </div>
+
+      <button class="btn btn--primary" id="copy">📋 คัดลอกค่า SHA1</button>
+    </div>
+  </section>
+
+  <p class="back"><a href="/">← กลับหน้าแรก</a></p>
+
+  <script src="../../scripts/sha1-ui.js"></script>
+</Base>
+
+<style>
+  .page-head {
+    font-size: 1.7rem;
+    margin: 20px 0 8px;
+  }
+
+  .lead {
+    margin: 0 0 16px;
+  }
+
+  .cart + .cart {
+    margin-top: 16px;
+  }
+
+  .meta {
+    margin: 4px 0 0;
+    word-break: break-all;
+  }
+
+  .hash {
+    margin: 6px 0 0;
+    padding: 11px 13px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+    word-break: break-all;
+    font-size: 0.95rem;
+    line-height: 1.6;
+  }
+
+  .back {
+    margin: 24px 0;
+  }
+
+  input[type='file'] {
+    width: 100%;
+    padding: 11px;
+    background: var(--surface-sunken);
+    border: 2px dashed var(--edge);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+</style>

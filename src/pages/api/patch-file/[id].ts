@@ -34,7 +34,13 @@ export const GET: APIRoute = async ({ params }) => {
   });
 
   if (!upstream.ok || !upstream.body) {
-    return text(`โหลดไฟล์แพตช์จากต้นทางไม่สำเร็จ (${upstream.status})`, 502);
+    // 404 จาก GitHub ทั้งที่ลิงก์ถูก มักแปลว่า repo เป็น private
+    // เพราะไฟล์ release ของ repo ส่วนตัวต้องล็อกอินถึงโหลดได้ ส่วนตัวกลางนี้ดึงแบบไม่ล็อกอิน
+    const hint =
+      upstream.status === 404
+        ? ' — ถ้าลิงก์ถูกต้องแล้ว ให้เช็คว่า repo บน GitHub ตั้งเป็นสาธารณะหรือยัง'
+        : '';
+    return text(`โหลดไฟล์แพตช์จากต้นทางไม่สำเร็จ (${upstream.status})${hint}`, 502);
   }
 
   const headers = new Headers({

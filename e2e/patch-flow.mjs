@@ -149,6 +149,26 @@ await check('ไฟล์ที่ดาวน์โหลดถูกต้อ�
   );
 });
 
+console.log('เครื่องมือหาค่า SHA1');
+
+await check('คำนวณ SHA1 ตรงกับที่ sha1sum คำนวณได้', async () => {
+  await page.goto(`${BASE}/tools/sha1`, { waitUntil: 'domcontentloaded' });
+  await page.setInputFiles('#file', {
+    name: 'harvest-moon.bin',
+    mimeType: 'application/octet-stream',
+    buffer: SOURCE,
+  });
+  await page.locator('#result').waitFor({ state: 'visible', timeout: 10000 });
+
+  const expected = createHash('sha1').update(SOURCE).digest('hex');
+  assert.equal((await page.locator('#hash').textContent()).trim(), expected);
+});
+
+await check('ยังไม่โชว์ผลลัพธ์ก่อนเลือกไฟล์', async () => {
+  await page.goto(`${BASE}/tools/sha1`, { waitUntil: 'domcontentloaded' });
+  assert.equal(await page.locator('#result').isVisible(), false);
+});
+
 console.log('หน้ากำลังทำอยู่');
 
 await check('แสดงแถบความคืบหน้าของเกมที่ยังไม่เสร็จ', async () => {
