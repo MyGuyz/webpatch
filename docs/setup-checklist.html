@@ -1,0 +1,730 @@
+<title>ติดตั้ง webpatch</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anuphan:wght@500;600;700&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+
+<style>
+  :root {
+    --ground: #eef1f0;
+    --surface: #ffffff;
+    --surface-2: #f6f8f7;
+    --ink: #141d1b;
+    --ink-2: #475854;
+    --ink-3: #7d8f8a;
+    --rule: #d6dedb;
+    --rule-strong: #b7c4c0;
+
+    --pine: #10665a;
+    --pine-soft: #dbebe7;
+    --amber: #9c6300;
+    --amber-soft: #fbeed3;
+    --rust: #9d3122;
+    --rust-soft: #f9e2de;
+
+    --step: clamp(0.9rem, 0.4rem + 1.2vw, 1.15rem);
+    --shell: 44rem;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #0d1413;
+      --surface: #16201e;
+      --surface-2: #1c2725;
+      --ink: #e6edeb;
+      --ink-2: #a3b3ae;
+      --ink-3: #75857f;
+      --rule: #2a3835;
+      --rule-strong: #3b4a46;
+
+      --pine: #4fbfa9;
+      --pine-soft: #12302b;
+      --amber: #d9a441;
+      --amber-soft: #33280f;
+      --rust: #e28a78;
+      --rust-soft: #3a1f1a;
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #0d1413;
+    --surface: #16201e;
+    --surface-2: #1c2725;
+    --ink: #e6edeb;
+    --ink-2: #a3b3ae;
+    --ink-3: #75857f;
+    --rule: #2a3835;
+    --rule-strong: #3b4a46;
+
+    --pine: #4fbfa9;
+    --pine-soft: #12302b;
+    --amber: #d9a441;
+    --amber-soft: #33280f;
+    --rust: #e28a78;
+    --rust-soft: #3a1f1a;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--ground);
+    color: var(--ink);
+    font-family: 'IBM Plex Sans Thai', system-ui, sans-serif;
+    font-size: var(--step);
+    line-height: 1.7;
+  }
+
+  h1, h2, h3 {
+    font-family: 'Anuphan', 'IBM Plex Sans Thai', sans-serif;
+    line-height: 1.25;
+    text-wrap: balance;
+    margin: 0;
+  }
+
+  code, .mono {
+    font-family: 'IBM Plex Mono', ui-monospace, monospace;
+    font-size: 0.88em;
+  }
+
+  code {
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.08em 0.36em;
+    word-break: break-word;
+  }
+
+  .shell {
+    max-width: var(--shell);
+    margin: 0 auto;
+    padding: 0 1.25rem 5rem;
+  }
+
+  /* ─── หัวเรื่อง + แถบความคืบหน้าที่ติดอยู่ด้านบน ─────────── */
+
+  .masthead {
+    padding: 3.5rem 0 1.75rem;
+  }
+
+  .eyebrow {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    margin: 0 0 0.9rem;
+  }
+
+  h1 {
+    font-size: clamp(1.9rem, 1.2rem + 2.6vw, 2.7rem);
+    font-weight: 700;
+    letter-spacing: -0.015em;
+  }
+
+  .standfirst {
+    color: var(--ink-2);
+    margin: 0.85rem 0 0;
+    max-width: 34rem;
+  }
+
+  .meter {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--ground);
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 2.5rem;
+  }
+
+  .meter__inner {
+    max-width: var(--shell);
+    margin: 0 auto;
+    padding: 0.7rem 1.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+  }
+
+  .meter__count {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.82rem;
+    font-variant-numeric: tabular-nums;
+    color: var(--ink-2);
+    white-space: nowrap;
+  }
+
+  .meter__track {
+    flex: 1;
+    height: 5px;
+    background: var(--rule);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+
+  .meter__fill {
+    height: 100%;
+    width: 0;
+    background: var(--pine);
+    border-radius: 99px;
+    transition: width 0.25s ease;
+  }
+
+  .meter__reset {
+    font: inherit;
+    font-size: 0.78rem;
+    background: none;
+    border: 1px solid var(--rule-strong);
+    color: var(--ink-2);
+    border-radius: 99px;
+    padding: 0.15rem 0.7rem;
+    cursor: pointer;
+  }
+
+  .meter__reset:hover { border-color: var(--pine); color: var(--pine); }
+
+  /* ─── หัวข้อแต่ละช่วง ────────────────────────────────── */
+
+  .phase {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    margin: 3rem 0 1.1rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 2px solid var(--ink);
+  }
+
+  .phase:first-of-type { margin-top: 0; }
+
+  .phase__key {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--pine);
+  }
+
+  .phase__name { font-size: 1.28rem; font-weight: 600; }
+
+  .phase__aim {
+    margin: 0 0 1.5rem;
+    color: var(--ink-2);
+    font-size: 0.92em;
+  }
+
+  /* ─── ขั้นตอน ─────────────────────────────────────── */
+
+  .steps { display: flex; flex-direction: column; gap: 0.9rem; }
+
+  .step {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    overflow: hidden;
+    transition: opacity 0.2s ease, border-color 0.2s ease;
+  }
+
+  .step__head {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.85rem;
+    width: 100%;
+    padding: 0.95rem 1.05rem;
+    background: none;
+    border: 0;
+    font: inherit;
+    color: inherit;
+    text-align: start;
+    cursor: pointer;
+  }
+
+  .step__key {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 2.1rem;
+    height: 1.6rem;
+    margin-top: 0.15rem;
+    border: 1px solid var(--rule-strong);
+    border-radius: 3px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.74rem;
+    color: var(--ink-2);
+    transition: background 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+  }
+
+  .step__title { font-weight: 600; flex: 1; }
+
+  .step__tick {
+    flex: none;
+    width: 1.35rem;
+    height: 1.35rem;
+    margin-top: 0.28rem;
+    border: 1.5px solid var(--rule-strong);
+    border-radius: 3px;
+    display: grid;
+    place-items: center;
+    color: transparent;
+    font-size: 0.85rem;
+    line-height: 1;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+  }
+
+  .step__body {
+    padding: 0 1.05rem 1.1rem 4.05rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .step__body > * { margin: 0; }
+
+  .step[data-done="true"] { opacity: 0.5; border-color: var(--rule); }
+  .step[data-done="true"] .step__key { background: var(--pine); border-color: var(--pine); color: var(--surface); }
+  .step[data-done="true"] .step__tick { background: var(--pine); border-color: var(--pine); color: var(--surface); }
+  .step[data-done="true"] .step__title { text-decoration: line-through; text-decoration-color: var(--ink-3); }
+
+  .step__head:focus-visible { outline: 2px solid var(--pine); outline-offset: -2px; }
+
+  ol, ul { margin: 0; padding-inline-start: 1.3rem; }
+  li + li { margin-top: 0.3rem; }
+
+  /* ─── กล่องเตือน ─────────────────────────────────── */
+
+  .flag {
+    border-inline-start: 3px solid;
+    padding: 0.75rem 0.95rem;
+    border-radius: 0 3px 3px 0;
+    font-size: 0.93em;
+  }
+
+  .flag--trap { border-color: var(--amber); background: var(--amber-soft); }
+  .flag--never { border-color: var(--rust); background: var(--rust-soft); }
+  .flag--ok { border-color: var(--pine); background: var(--pine-soft); }
+
+  .flag__lead {
+    display: block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  .flag--trap .flag__lead { color: var(--amber); }
+  .flag--never .flag__lead { color: var(--rust); }
+  .flag--ok .flag__lead { color: var(--pine); }
+
+  /* ─── ตาราง ───────────────────────────────────────── */
+
+  .scroller { overflow-x: auto; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.9em;
+    min-width: 26rem;
+  }
+
+  th, td {
+    text-align: start;
+    padding: 0.55rem 0.7rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  th {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+    font-weight: 500;
+    border-bottom-color: var(--rule-strong);
+  }
+
+  .fields td:first-child { white-space: nowrap; }
+
+  /* ─── ท้ายหน้า ─────────────────────────────────────── */
+
+  .outro {
+    margin-top: 3.5rem;
+    padding-top: 1.5rem;
+    border-top: 2px solid var(--ink);
+  }
+
+  .outro h2 { font-size: 1.15rem; margin-bottom: 0.9rem; }
+
+  .colophon {
+    margin-top: 2.5rem;
+    color: var(--ink-3);
+    font-size: 0.85em;
+  }
+
+  a { color: var(--pine); }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<header class="shell masthead">
+  <p class="eyebrow">คู่มือติดตั้ง · 13 ขั้นตอน</p>
+  <h1>พาตั้งค่า webpatch จนเว็บเปิดได้จริง</h1>
+  <p class="standfirst">
+    ทำตามทีละข้อ ติ๊กไปเรื่อยๆ ไม่ต้องใช้ command line เลยสักบรรทัด
+    ใช้เวลาราว 20–30 นาที ทำครั้งเดียวจบ · ปิดหน้านี้แล้วเปิดใหม่ ติ๊กที่ทำไว้ยังอยู่
+  </p>
+</header>
+
+<div class="meter">
+  <div class="meter__inner">
+    <span class="meter__count" id="count">0 / 13</span>
+    <div class="meter__track"><div class="meter__fill" id="fill"></div></div>
+    <button class="meter__reset" id="reset" type="button">ล้างติ๊ก</button>
+  </div>
+</div>
+
+<main class="shell" id="steps">
+
+  <h2 class="phase"><span class="phase__key">A</span><span class="phase__name">Supabase — สร้างฐานข้อมูล</span></h2>
+  <p class="phase__aim">จบช่วงนี้พี่จะได้ค่ามา <strong>2 ตัว</strong> เอาไปใช้ต่อในช่วง B</p>
+
+  <div class="steps">
+
+    <article class="step" data-id="a1">
+      <button class="step__head" type="button">
+        <span class="step__key">A1</span>
+        <span class="step__title">สร้างโปรเจกต์ใหม่</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <ol>
+          <li>เข้า <a href="https://supabase.com/dashboard" target="_blank" rel="noopener">supabase.com/dashboard</a> แล้วกด <strong>New project</strong></li>
+          <li><strong>Name</strong> — ตั้งว่า <code>webpatch</code></li>
+          <li><strong>Database Password</strong> — กดสุ่มแล้วเก็บไว้ที่ปลอดภัย (คู่มือนี้ไม่ได้ใช้ แต่หายแล้วยุ่งทีหลัง)</li>
+          <li><strong>Region</strong> — เลือก <strong>Southeast Asia (Singapore)</strong> ใกล้ไทยสุด เว็บจะเร็วกว่า</li>
+          <li>กด <strong>Create new project</strong> แล้วรอราว 2 นาที</li>
+        </ol>
+      </div>
+    </article>
+
+    <article class="step" data-id="a2">
+      <button class="step__head" type="button">
+        <span class="step__key">A2</span>
+        <span class="step__title">สร้างตารางด้วยไฟล์ SQL ที่เตรียมไว้ให้</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <ol>
+          <li>เมนูซ้าย → <strong>SQL Editor</strong> → <strong>New query</strong></li>
+          <li>เปิดไฟล์ <code>supabase/migrations/0001_initial_schema.sql</code> ใน repo แล้ว<strong>คัดลอกทั้งไฟล์</strong></li>
+          <li>วางลงในช่อง แล้วกด <strong>Run</strong></li>
+        </ol>
+        <div class="flag flag--ok">
+          <span class="flag__lead">ถูกต้องแล้วถ้าเห็น</span>
+          ข้อความ <code>Success. No rows returned</code> — ไฟล์นี้สร้างตารางอย่างเดียว ไม่ได้ดึงข้อมูลอะไรมา จึงไม่มีผลลัพธ์เป็นตารางออกมา
+        </div>
+      </div>
+    </article>
+
+    <article class="step" data-id="a3">
+      <button class="step__head" type="button">
+        <span class="step__key">A3</span>
+        <span class="step__title">เช็คว่าตารางขึ้นครบ</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <p>เมนูซ้าย → <strong>Table Editor</strong> ต้องเห็นครบ 5 ตาราง:</p>
+        <p class="mono">announcements · bug_reports · changelogs · consoles · games</p>
+        <p>เปิดตาราง <code>consoles</code> ดู จะมีเครื่องเล่นใส่ไว้ให้แล้ว 5 แถว (Super Famicom, GBA, NDS, PS1, PSP) — <strong>จำเลข id ของแต่ละเครื่องไว้</strong> เดี๋ยวได้ใช้ตอน C3</p>
+      </div>
+    </article>
+
+    <article class="step" data-id="a4">
+      <button class="step__head" type="button">
+        <span class="step__key">A4</span>
+        <span class="step__title">คัดลอกค่า 2 ตัวเก็บไว้</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <p>เมนูซ้าย → <strong>Project Settings</strong> (รูปฟันเฟือง) → <strong>API keys</strong></p>
+        <div class="scroller">
+          <table class="fields">
+            <thead><tr><th>หาอันไหน</th><th>หน้าตาประมาณนี้</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Project URL</strong></td><td class="mono">https://xxxxxxxx.supabase.co</td></tr>
+              <tr><td><strong>anon public</strong></td><td class="mono">eyJhbGciOi… (ยาวมาก)</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flag flag--never">
+          <span class="flag__lead">ห้ามหยิบผิดตัว</span>
+          ในหน้าเดียวกันจะมีคีย์ชื่อ <code>service_role</code> อยู่ด้วย — <strong>อย่าเอามาใช้เด็ดขาด</strong>
+          ตัวนั้นข้ามระบบความปลอดภัยทั้งหมด ถ้าหลุดออกไปคนอื่นลบข้อมูลเราได้เกลี้ยง
+          ตัวที่ต้องใช้คือ <strong>anon public</strong> เท่านั้น ซึ่งเปิดเผยได้ปลอดภัยเพราะมีกฎในไฟล์ SQL คุมอยู่
+        </div>
+      </div>
+    </article>
+
+  </div>
+
+  <h2 class="phase"><span class="phase__key">B</span><span class="phase__name">Cloudflare — เอาเว็บขึ้นออนไลน์</span></h2>
+  <p class="phase__aim">จบช่วงนี้จะได้ <strong>ลิงก์เว็บจริง</strong> ที่ใครก็เปิดได้</p>
+
+  <div class="steps">
+
+    <article class="step" data-id="b1">
+      <button class="step__head" type="button">
+        <span class="step__key">B1</span>
+        <span class="step__title">เชื่อม GitHub เข้ากับ Cloudflare</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <ol>
+          <li>เข้า <a href="https://dash.cloudflare.com" target="_blank" rel="noopener">dash.cloudflare.com</a> → เมนูซ้าย <strong>Workers &amp; Pages</strong></li>
+          <li>กด <strong>Create</strong> → แท็บ <strong>Import a repository</strong></li>
+          <li>กด <strong>Connect GitHub</strong> แล้วอนุญาตให้เห็น repo <code>MyGuyz/webpatch</code></li>
+          <li>เลือก <code>webpatch</code> → <strong>Begin setup</strong></li>
+        </ol>
+      </div>
+    </article>
+
+    <article class="step" data-id="b2">
+      <button class="step__head" type="button">
+        <span class="step__key">B2</span>
+        <span class="step__title">กรอกค่า build</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <div class="scroller">
+          <table class="fields">
+            <thead><tr><th>ช่อง</th><th>ใส่อะไร</th></tr></thead>
+            <tbody>
+              <tr><td>Project name</td><td>ตั้งว่า <code>webpatch</code> — ชื่อนี้จะกลายเป็นที่อยู่เว็บ</td></tr>
+              <tr><td>Production branch</td><td><code>main</code></td></tr>
+              <tr><td>Build command</td><td><code>npm run build</code></td></tr>
+              <tr><td>Deploy command</td><td><code>npx wrangler deploy</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flag flag--ok">
+          <span class="flag__lead">ไม่ต้องทำแล้ว</span>
+          ปกติ Astro จะบังคับให้สร้าง KV namespace กับผูก Images binding เพิ่ม
+          ผมปิดสองอย่างนั้นไปแล้วเพราะเว็บเราไม่ได้ใช้ พี่จะไม่เจอขั้นตอนพวกนั้น
+        </div>
+      </div>
+    </article>
+
+    <article class="step" data-id="b3">
+      <button class="step__head" type="button">
+        <span class="step__key">B3</span>
+        <span class="step__title">ใส่ค่า Supabase — ขั้นที่คนพลาดมากที่สุด</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <p>ในหน้าเดียวกัน หาหัวข้อ <strong>Environment variables</strong> หรือ <strong>Build variables</strong> แล้วเพิ่ม 2 ตัว:</p>
+        <div class="scroller">
+          <table class="fields">
+            <thead><tr><th>ชื่อตัวแปร</th><th>ค่า</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">PUBLIC_SUPABASE_URL</td><td>Project URL จาก A4</td></tr>
+              <tr><td class="mono">PUBLIC_SUPABASE_ANON_KEY</td><td>anon public key จาก A4</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flag flag--trap">
+          <span class="flag__lead">กับดัก</span>
+          Cloudflare มีช่องใส่ตัวแปร <strong>2 ที่</strong> คือตอน <em>build</em> กับตอน <em>เว็บทำงาน (runtime)</em>
+          เว็บเราฝังค่าพวกนี้ตั้งแต่ตอน build ถ้าไปใส่ช่อง runtime
+          <strong>เว็บจะขึ้นได้ปกติแต่ยังเป็นโหมดตัวอย่างตลอดไป โดยไม่มี error อะไรบอกเลย</strong>
+          <br><br>ไม่แน่ใจว่าช่องไหน — <strong>ใส่ทั้งสองที่ไปเลย</strong> ไม่เสียหายอะไร
+        </div>
+      </div>
+    </article>
+
+    <article class="step" data-id="b4">
+      <button class="step__head" type="button">
+        <span class="step__key">B4</span>
+        <span class="step__title">กด Deploy แล้วรอ</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <p>กด <strong>Save and Deploy</strong> แล้วรอ 2–4 นาที เสร็จแล้วจะได้ลิงก์หน้าตาแบบ <span class="mono">https://webpatch.xxx.workers.dev</span></p>
+        <p>ถ้าขึ้นแดงว่า build ไม่ผ่าน ให้กดเข้าไปดู log แล้วแคปหน้าจอมาถามได้</p>
+      </div>
+    </article>
+
+  </div>
+
+  <h2 class="phase"><span class="phase__key">C</span><span class="phase__name">ตรวจว่าใช้ได้จริง</span></h2>
+  <p class="phase__aim">จบช่วงนี้จะมีเกมแรกให้คนโหลดไปแปะได้จริง</p>
+
+  <div class="steps">
+
+    <article class="step" data-id="c1">
+      <button class="step__head" type="button">
+        <span class="step__key">C1</span>
+        <span class="step__title">เปิดเว็บดูว่าเชื่อมฐานข้อมูลติดไหม</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <p>เปิดลิงก์ที่ได้จาก B4 — <strong>ต้องไม่มีกล่องเหลืองเขียนว่า "โหมดตัวอย่าง"</strong></p>
+        <ul>
+          <li>ยังเห็นกล่องเหลือง → ใส่ตัวแปรผิดช่อง กลับไปทำ <strong>B3</strong> แล้ว deploy ใหม่</li>
+          <li>ขึ้น error 500 → ใส่ตัวแปรมาแค่ตัวเดียว หน้าจอจะบอกเองว่าขาดตัวไหน</li>
+        </ul>
+      </div>
+    </article>
+
+    <article class="step" data-id="c2">
+      <button class="step__head" type="button">
+        <span class="step__key">C2</span>
+        <span class="step__title">หน้าแรกว่างเปล่า — ตรงนี้ปกติ</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <p>ไม่ได้พังนะ เพราะฐานข้อมูลยังไม่มีเกมสักเกม ข้อมูลสมมติหายไปแล้วเพราะตอนนี้อ่านจากของจริง — ขั้นถัดไปคือใส่เกมแรก</p>
+      </div>
+    </article>
+
+    <article class="step" data-id="c3">
+      <button class="step__head" type="button">
+        <span class="step__key">C3</span>
+        <span class="step__title">ใส่เกมแรกลงฐานข้อมูล</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <p>กลับไป Supabase → <strong>Table Editor</strong> → ตาราง <code>games</code> → <strong>Insert row</strong></p>
+        <div class="scroller">
+          <table class="fields">
+            <thead><tr><th>ช่อง</th><th>ใส่อะไร</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">console_id</td><td>เลข id ของเครื่อง ดูจากตาราง <code>consoles</code> (A3)</td></tr>
+              <tr><td class="mono">slug</td><td>ชื่ออังกฤษไม่มีเว้นวรรค เช่น <code>bahamut-lagoon</code> · ห้ามซ้ำเกมอื่น</td></tr>
+              <tr><td class="mono">title</td><td>ชื่อเกม</td></tr>
+              <tr><td class="mono">status</td><td><code>ready</code> ถ้าแพตช์เสร็จ · <code>wip</code> ถ้ายังทำอยู่</td></tr>
+              <tr><td class="mono">patch_url</td><td>ลิงก์ไฟล์แพตช์ (ได้จาก C4)</td></tr>
+              <tr><td class="mono">patch_format</td><td><code>ips</code> / <code>bps</code> / <code>ppf</code></td></tr>
+              <tr><td class="mono">source_sha1</td><td>ลายนิ้วมือไฟล์เกมต้นฉบับ 40 ตัวอักษร · เว้นว่างได้ = ไม่ตรวจรุ่น</td></tr>
+              <tr><td class="mono">is_published</td><td><strong>ติ๊กให้เป็น true</strong> ไม่งั้นเว็บจะไม่แสดง</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="flag flag--ok">
+          <span class="flag__lead">ระบบกันไว้ให้</span>
+          เกมที่ <code>status</code> เป็น <code>ready</code> ต้องมี <code>patch_url</code> และ <code>patch_format</code> ครบ
+          ไม่งั้นฐานข้อมูลจะไม่ยอมบันทึก — กันไม่ให้คนกดเข้ามาแล้วเจอหน้าเปล่า
+        </div>
+      </div>
+    </article>
+
+    <article class="step" data-id="c4">
+      <button class="step__head" type="button">
+        <span class="step__key">C4</span>
+        <span class="step__title">เอาไฟล์แพตช์ขึ้น GitHub Releases</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <ol>
+          <li>ไปที่ repo บน GitHub → ขวามือหา <strong>Releases</strong> → <strong>Create a new release</strong></li>
+          <li><strong>Choose a tag</strong> → พิมพ์ tag ใหม่ เช่น <code>bahamut-v1.3</code> → <strong>Create new tag</strong></li>
+          <li>ลากไฟล์แพตช์มาวางในช่อง <strong>Attach binaries</strong></li>
+          <li>กด <strong>Publish release</strong></li>
+          <li>คลิกขวาที่ไฟล์ที่แนบ → <strong>Copy link address</strong> → เอาไปใส่ <code>patch_url</code> ใน C3</li>
+        </ol>
+        <p>ไฟล์ใหญ่ได้ถึง 2GB และคนโหลดเท่าไหร่ก็ได้ ไม่มีโควต้า</p>
+      </div>
+    </article>
+
+    <article class="step" data-id="c5">
+      <button class="step__head" type="button">
+        <span class="step__key">C5</span>
+        <span class="step__title">ลองแปะแพตช์จริง</span>
+        <span class="step__tick">✓</span>
+      </button>
+      <div class="step__body">
+        <p>เปิดหน้า <strong>แปะแพตช์</strong> บนเว็บ → เลือกเกม → เลือกไฟล์เกมต้นฉบับ → กดแปะ → ดาวน์โหลด</p>
+        <p>เอาไฟล์ที่ได้ไปเปิดในอีมูเลเตอร์ ถ้าเป็นภาษาไทย — <strong>จบครับ เว็บใช้งานได้แล้ว</strong> 🎮</p>
+      </div>
+    </article>
+
+  </div>
+
+  <section class="outro">
+    <h2>เจอแบบนี้ แปลว่าอะไร</h2>
+    <div class="scroller">
+      <table>
+        <thead><tr><th>อาการ</th><th>สาเหตุ</th><th>แก้</th></tr></thead>
+        <tbody>
+          <tr><td>กล่องเหลือง "โหมดตัวอย่าง"</td><td>ตัวแปรผิดช่อง หรือยังไม่ได้ใส่</td><td>ทำ B3 ใหม่ แล้ว deploy ซ้ำ</td></tr>
+          <tr><td>error 500</td><td>ใส่ตัวแปรมาแค่ตัวเดียว</td><td>อ่านข้อความบนจอ มันบอกเองว่าขาดตัวไหน</td></tr>
+          <tr><td>หน้าแรกว่างทั้งที่ใส่เกมแล้ว</td><td>ลืมติ๊ก <code>is_published</code></td><td>ไปติ๊กในตาราง <code>games</code></td></tr>
+          <tr><td>"ยังไม่มีไฟล์แพตช์ให้โหลด"</td><td><code>patch_url</code> ว่าง</td><td>ทำ C4</td></tr>
+          <tr><td>"ที่อยู่ไฟล์แพตช์ไม่ถูกต้อง"</td><td>ลิงก์ไม่ได้ชี้ไป GitHub</td><td>ตั้งใจกันไว้เพื่อความปลอดภัย ต้องเป็นลิงก์ GitHub</td></tr>
+          <tr><td>"ไฟล์นี้ไม่ตรงรุ่น"</td><td>ไฟล์เกมคนละเวอร์ชันกับที่แพตช์รองรับ</td><td>ถูกแล้ว ระบบกันไม่ให้ได้ไฟล์เสีย</td></tr>
+          <tr><td>SQL ขึ้นแดง <code>already exists</code></td><td>รันไฟล์ SQL ซ้ำ</td><td>ไม่เป็นไร ตารางสร้างไปแล้ว ข้ามไป A3</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="colophon">
+      เพิ่มเกมครั้งต่อไปยังต้องทำ 2 ที่ (อัปไฟล์ที่ GitHub แล้วมากรอกที่ Supabase)
+      — หน้า Admin ที่จะทำให้เหลือฟอร์มเดียวจบอยู่ในแผนเฟสถัดไป
+    </p>
+  </section>
+
+</main>
+
+<script>
+  const KEY = 'webpatch-setup-progress';
+  const steps = Array.from(document.querySelectorAll('.step'));
+  const fill = document.getElementById('fill');
+  const count = document.getElementById('count');
+
+  function load() {
+    try {
+      return new Set(JSON.parse(localStorage.getItem(KEY) ?? '[]'));
+    } catch {
+      return new Set();
+    }
+  }
+
+  function save(done) {
+    try {
+      localStorage.setItem(KEY, JSON.stringify([...done]));
+    } catch {
+      // เบราว์เซอร์บางตัวปิดการเก็บข้อมูลไว้ — ติ๊กยังใช้ได้ แค่ไม่ถูกจำข้ามรอบ
+    }
+  }
+
+  let done = load();
+
+  function render() {
+    for (const step of steps) {
+      const isDone = done.has(step.dataset.id);
+      step.dataset.done = String(isDone);
+      step.querySelector('.step__head').setAttribute('aria-pressed', String(isDone));
+    }
+    const pct = (done.size / steps.length) * 100;
+    fill.style.width = pct + '%';
+    count.textContent = `${done.size} / ${steps.length}`;
+  }
+
+  for (const step of steps) {
+    const head = step.querySelector('.step__head');
+    head.setAttribute('aria-label', 'ทำขั้นนี้แล้ว');
+    head.addEventListener('click', () => {
+      const id = step.dataset.id;
+      done.has(id) ? done.delete(id) : done.add(id);
+      save(done);
+      render();
+    });
+  }
+
+  document.getElementById('reset').addEventListener('click', () => {
+    done = new Set();
+    save(done);
+    render();
+  });
+
+  render();
+</script>
