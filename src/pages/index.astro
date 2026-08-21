@@ -27,8 +27,9 @@ const inProgress = games.filter((g) => g.status === 'wip');
       usingSeed && (
         <p class="note">
           <strong>โหมดตัวอย่าง</strong> — ยังไม่ได้เชื่อม Supabase ข้อมูลที่เห็นเป็นของสมมติ
-          <br />ถ้าเพิ่ง deploy แล้วยังเห็นข้อความนี้ แปลว่าใส่ค่า Supabase ผิดช่อง —
-          ต้องใส่ในช่อง <strong>build variables</strong> ของ Cloudflare ไม่ใช่ช่อง runtime
+          <br />ไปตั้งค่าตัวแปร <span class="mono">PUBLIC_SUPABASE_URL</span> และ
+          <span class="mono">PUBLIC_SUPABASE_ANON_KEY</span> ใน Cloudflare
+          (ที่ <strong>Settings → Variables and Secrets</strong>) แล้ว deploy ใหม่
         </p>
       )
     }
@@ -71,6 +72,8 @@ const inProgress = games.filter((g) => g.status === 'wip');
         </section>
       )
     }
+
+    <p class="build-stamp muted">เว็บชุดนี้ build เมื่อ {__BUILD_TIME__}</p>
 
     <p class="note note--privacy">
       🔒 เว็บนี้แจกเฉพาะ<strong>ไฟล์แพตช์</strong> ไม่ได้แจกตัวเกม
@@ -120,5 +123,11 @@ const inProgress = games.filter((g) => g.status === 'wip');
   .announce {
     margin: 0;
     font-size: 0.94rem;
+  }
+
+  .build-stamp {
+    text-align: center;
+    font-size: 0.75rem;
+    opacity: 0.65;
   }
 </style>
