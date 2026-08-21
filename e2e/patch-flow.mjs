@@ -169,6 +169,27 @@ await check('ยังไม่โชว์ผลลัพธ์ก่อนเ�
   assert.equal(await page.locator('#result').isVisible(), false);
 });
 
+console.log('หน้า Admin');
+
+await check('หน้า Admin เปิดได้ ไม่ 404', async () => {
+  const response = await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded' });
+  assert.equal(response.status(), 200);
+});
+
+await check('ไม่มีเครื่องมือแอดมินโผล่ให้คนที่ยังไม่ล็อกอิน', async () => {
+  await page.goto(`${BASE}/admin`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1500);
+  assert.equal(await page.locator('#game-list').isVisible(), false, 'รายการเกมต้องไม่โผล่');
+  assert.equal(await page.locator('#add-btn').isVisible(), false, 'ปุ่มเพิ่มเกมต้องไม่โผล่');
+  assert.equal(await page.locator('#signout').isVisible(), false, 'ปุ่มออกจากระบบต้องไม่โผล่');
+});
+
+await check('หน้าฟอร์มไม่โชว์ช่องกรอกให้คนที่ยังไม่ล็อกอิน', async () => {
+  await page.goto(`${BASE}/admin/game`, { waitUntil: 'domcontentloaded' });
+  await page.waitForTimeout(1200);
+  assert.equal(await page.locator('#game-form').isVisible(), false, 'ฟอร์มต้องยังไม่โผล่');
+});
+
 console.log('หน้ากำลังทำอยู่');
 
 await check('แสดงแถบความคืบหน้าของเกมที่ยังไม่เสร็จ', async () => {

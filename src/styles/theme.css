@@ -256,6 +256,18 @@ a {
   color: var(--ink);
 }
 
+/* ปุ่มรองในแถวรายการ — ไม่ต้องกินความกว้างเต็มบรรทัด */
+.btn--small {
+  width: auto;
+  padding: 8px 14px;
+  font-size: 0.87rem;
+}
+
+.btn--danger {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
 /* ── ช่องกรอก ─────────────────────────────────────────────── */
 
 .field {

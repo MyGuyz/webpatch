@@ -1,0 +1,258 @@
+---
+import Base from '../../layouts/Base.astro';
+import { getConsoles, PROGRESS_STAGES } from '../../lib/games.js';
+
+const consoles = await getConsoles();
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
+---
+
+<Base title="แก้ข้อมูลเกม — เกมไทย" description="หน้าจัดการสำหรับผู้ดูแลเว็บ">
+  <h1 class="page-head" id="page-head">เพิ่มเกมใหม่</h1>
+
+  <p class="msg" id="msg" hidden></p>
+
+  <form id="game-form" hidden>
+    <section class="cart">
+      <div class="cart__label"><span>ข้อมูลเกม</span></div>
+      <div class="cart__body">
+        <label class="field">
+          <span class="field__label">ชื่อเกม *</span>
+          <input type="text" name="title" required />
+          <span class="err" data-err="title"></span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">ชื่อย่อ (ใช้เป็นที่อยู่ในเว็บ) *</span>
+          <input type="text" name="slug" placeholder="harvest-moon-back-to-nature" required />
+          <span class="err" data-err="slug"></span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">เครื่องเล่น *</span>
+          <select name="console_id" required>
+            <option value="">— เลือกเครื่อง —</option>
+            {consoles.map((c) => <option value={c.id}>{c.name}</option>)}
+          </select>
+          <span class="err" data-err="console_id"></span>
+        </label>
+
+        <label class="field">
+          <span class="field__label">คำโปรย (บรรทัดเล็กใต้ชื่อ)</span>
+          <input type="text" name="subtitle" placeholder="ต้นตำรับเกมฟาร์มบน PlayStation" />
+        </label>
+
+        <label class="field">
+          <span class="field__label">รายละเอียด</span>
+          <textarea name="description" rows="3"></textarea>
+        </label>
+
+        <label class="field">
+          <span class="field__label">ลิงก์รูปปก</span>
+          <input type="text" name="cover_url" placeholder="https://..." />
+        </label>
+      </div>
+    </section>
+
+    <section class="cart">
+      <div class="cart__label"><span>ไฟล์แพตช์</span></div>
+      <div class="cart__body">
+        <p class="hint">
+          อัปไฟล์ขึ้น <strong>GitHub Releases</strong> ก่อน แล้วคลิกขวาที่ไฟล์ →
+          <strong>Copy link address</strong> เอามาวางในช่องนี้
+        </p>
+
+        <label class="field">
+          <span class="field__label">ลิงก์ไฟล์แพตช์</span>
+          <input type="text" name="patch_url" placeholder="https://github.com/.../file.ppf" />
+          <span class="err" data-err="patch_url"></span>
+        </label>
+
+        <div class="row">
+          <label class="field">
+            <span class="field__label">รูปแบบ</span>
+            <select name="patch_format">
+              <option value="">—</option>
+              <option value="ips">.ips</option>
+              <option value="bps">.bps</option>
+              <option value="ppf">.ppf</option>
+            </select>
+            <span class="err" data-err="patch_format"></span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">เวอร์ชัน</span>
+            <input type="text" name="patch_version" placeholder="V1.0" />
+          </label>
+        </div>
+
+        <label class="field">
+          <span class="field__label">วันที่อัปเดตแพตช์</span>
+          <input type="date" name="patch_updated_at" />
+          <span class="err" data-err="patch_updated_at"></span>
+        </label>
+      </div>
+    </section>
+
+    <section class="cart">
+      <div class="cart__label"><span>ไฟล์เกมต้นฉบับที่ต้องใช้</span></div>
+      <div class="cart__body">
+        <label class="field">
+          <span class="field__label">คำอธิบายรุ่นไฟล์ (ให้คนอ่าน)</span>
+          <input
+            type="text"
+            name="source_spec"
+            placeholder="Harvest Moon - Back to Nature (USA) [SLUS-01115] .bin (MODE2/2352)"
+          />
+        </label>
+
+        <label class="field">
+          <span class="field__label">SHA1 ของไฟล์ต้นฉบับ (ให้เครื่องตรวจ)</span>
+          <input type="text" name="source_sha1" placeholder="เว้นว่างได้ = ไม่ตรวจรุ่น" />
+          <span class="err" data-err="source_sha1"></span>
+        </label>
+
+        <p class="hint">
+          หาค่าได้ที่ <a href="/tools/sha1" target="_blank">/tools/sha1</a> —
+          ถ้าเว้นว่าง คนที่เอาไฟล์ผิดรุ่นมาแปะจะได้ไฟล์เสียโดยไม่รู้ตัว
+        </p>
+      </div>
+    </section>
+
+    <section class="cart">
+      <div class="cart__label"><span>สถานะ</span></div>
+      <div class="cart__body">
+        <label class="field">
+          <span class="field__label">สถานะเกม</span>
+          <select name="status">
+            <option value="wip">กำลังทำอยู่</option>
+            <option value="beta">BETA — ปล่อยแล้วแต่ยังตรวจไม่ทั่ว</option>
+            <option value="ready">พร้อมให้ Patch</option>
+          </select>
+          <span class="err" data-err="status"></span>
+        </label>
+
+        <div class="row">
+          <label class="field">
+            <span class="field__label">ขั้นความคืบหน้า</span>
+            <select name="progress_stage">
+              {PROGRESS_STAGES.map((name, i) => (
+                <option value={i + 1}>{i + 1}. {name}</option>
+              ))}
+            </select>
+          </label>
+
+          <label class="field">
+            <span class="field__label">งานแปล (%)</span>
+            <input type="number" name="progress_percent" min="0" max="100" value="0" />
+          </label>
+        </div>
+
+        <label class="check">
+          <input type="checkbox" name="is_published" />
+          <span>เผยแพร่บนเว็บ (ถ้าไม่ติ๊ก จะไม่มีใครเห็นเกมนี้)</span>
+        </label>
+      </div>
+    </section>
+
+    <div class="actions">
+      <button class="btn btn--primary" type="submit" id="save">บันทึก</button>
+      <a class="btn btn--ghost" href="/admin">ยกเลิก</a>
+    </div>
+  </form>
+
+  <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
+    window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
+  </script>
+  <script src="../../scripts/admin-form.js"></script>
+</Base>
+
+<style>
+  .page-head {
+    font-size: 1.7rem;
+    margin: 20px 0 14px;
+  }
+
+  .cart + .cart {
+    margin-top: 16px;
+  }
+
+  textarea,
+  input[type='date'],
+  input[type='number'] {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 2px solid var(--edge);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 1rem;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  .row {
+    display: flex;
+    gap: 12px;
+  }
+
+  .row .field {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .check {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 0.92rem;
+  }
+
+  .check input {
+    margin-top: 4px;
+    width: 20px;
+    height: 20px;
+    flex: none;
+  }
+
+  .hint {
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+
+  .err {
+    display: none;
+    margin-top: 5px;
+    font-size: 0.83rem;
+    color: var(--danger);
+  }
+
+  .err:not(:empty) {
+    display: block;
+  }
+
+  .msg {
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--clay);
+    background: var(--clay-wash);
+    font-size: 0.9rem;
+    margin: 0 0 14px;
+  }
+
+  .msg[data-kind='ok'] {
+    border-left-color: var(--teal);
+    background: var(--teal-wash);
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0 28px;
+  }
+</style>
