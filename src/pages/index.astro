@@ -26,7 +26,9 @@ const inProgress = games.filter((g) => g.status === 'wip');
     {
       usingSeed && (
         <p class="note">
-          <strong>โหมดตัวอย่าง</strong> — ยังไม่ได้ตั้งค่า Supabase ข้อมูลที่เห็นเป็นของสมมติ
+          <strong>โหมดตัวอย่าง</strong> — ยังไม่ได้เชื่อม Supabase ข้อมูลที่เห็นเป็นของสมมติ
+          <br />ถ้าเพิ่ง deploy แล้วยังเห็นข้อความนี้ แปลว่าใส่ค่า Supabase ผิดช่อง —
+          ต้องใส่ในช่อง <strong>build variables</strong> ของ Cloudflare ไม่ใช่ช่อง runtime
         </p>
       )
     }

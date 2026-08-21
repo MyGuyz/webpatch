@@ -14,6 +14,15 @@ function getClient() {
   const url = import.meta.env.PUBLIC_SUPABASE_URL;
   const key = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
+  // ใส่มาแค่ตัวเดียวแปลว่าตั้งใจจะเชื่อมแต่ทำไม่ครบ
+  // ถ้าปล่อยให้ตกไปใช้ข้อมูลตัวอย่างเงียบๆ จะหาสาเหตุไม่เจอเลย จึงต้องดังไว้ก่อน
+  if (Boolean(url) !== Boolean(key)) {
+    throw new Error(
+      'ตั้งค่า Supabase ไม่ครบ — ต้องใส่ทั้ง PUBLIC_SUPABASE_URL และ PUBLIC_SUPABASE_ANON_KEY ' +
+        `(ตอนนี้ขาด ${url ? 'PUBLIC_SUPABASE_ANON_KEY' : 'PUBLIC_SUPABASE_URL'})`
+    );
+  }
+
   if (!url || !key) return null;
   if (!client) client = createClient(url, key);
   return client;
