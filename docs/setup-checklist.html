@@ -517,7 +517,7 @@
     <article class="step" data-id="b3">
       <button class="step__head" type="button">
         <span class="step__key">B3</span>
-        <span class="step__title">ใส่ค่า Supabase — ขั้นที่คนพลาดมากที่สุด</span>
+        <span class="step__title">ใส่ค่า Supabase แล้ว deploy ใหม่</span>
         <span class="step__tick">✓</span>
       </button>
       <div class="step__body">
@@ -531,12 +531,11 @@
             </tbody>
           </table>
         </div>
-        <div class="flag flag--trap">
-          <span class="flag__lead">กับดัก</span>
+        <div class="flag flag--ok">
+          <span class="flag__lead">ใส่ช่องไหนก็ได้</span>
           Cloudflare มีช่องใส่ตัวแปร <strong>2 ที่</strong> คือตอน <em>build</em> กับตอน <em>เว็บทำงาน (runtime)</em>
-          เว็บเราฝังค่าพวกนี้ตั้งแต่ตอน build ถ้าไปใส่ช่อง runtime
-          <strong>เว็บจะขึ้นได้ปกติแต่ยังเป็นโหมดตัวอย่างตลอดไป โดยไม่มี error อะไรบอกเลย</strong>
-          <br><br>ไม่แน่ใจว่าช่องไหน — <strong>ใส่ทั้งสองที่ไปเลย</strong> ไม่เสียหายอะไร
+          — <strong>เว็บอ่านได้ทั้งสองช่อง</strong> ไม่ต้องกังวลว่าจะใส่ผิดที่
+          <br><br>แต่ <strong>ต้อง deploy ใหม่หลังใส่ค่า</strong> ค่าถึงจะมีผล
         </div>
       </div>
     </article>
@@ -673,7 +672,7 @@
       <table>
         <thead><tr><th>อาการ</th><th>สาเหตุ</th><th>แก้</th></tr></thead>
         <tbody>
-          <tr><td>กล่องเหลือง "โหมดตัวอย่าง"</td><td>ตัวแปรผิดช่อง หรือยังไม่ได้ใส่</td><td>ทำ B3 ใหม่ แล้ว deploy ซ้ำ</td></tr>
+          <tr><td>กล่องเหลือง "โหมดตัวอย่าง"</td><td>ยังไม่ได้ใส่ตัวแปร หรือใส่แล้วยังไม่ได้ deploy ใหม่</td><td>ทำ B3 แล้วกด Retry deployment</td></tr>
           <tr><td>error 500</td><td>ใส่ตัวแปรมาแค่ตัวเดียว</td><td>อ่านข้อความบนจอ มันบอกเองว่าขาดตัวไหน</td></tr>
           <tr><td>หน้าแรกว่างทั้งที่ใส่เกมแล้ว</td><td>ลืมติ๊ก <code>is_published</code></td><td>ไปติ๊กในตาราง <code>games</code></td></tr>
           <tr><td>"ยังไม่มีไฟล์แพตช์ให้โหลด"</td><td><code>patch_url</code> ว่าง</td><td>ทำ C5</td></tr>

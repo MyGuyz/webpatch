@@ -10,3 +10,6 @@ dist/
 
 # ผลลัพธ์การทดสอบ
 e2e/screenshot-*.png
+
+# ตัวแปร runtime ตอน dev — ห้ามขึ้น git
+.dev.vars

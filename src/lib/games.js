@@ -8,11 +8,25 @@ import { SEED_GAMES, SEED_CONSOLES, SEED_ANNOUNCEMENT } from './seed-games.js';
  * ตอนพัฒนาโดยไม่ต้องรอสมัครบัญชีให้เสร็จก่อน
  */
 
+/**
+ * Cloudflare มีช่องใส่ตัวแปร 2 ที่ คือตอน build กับตอนเว็บทำงาน (runtime)
+ * และช่อง runtime หาเจอง่ายกว่ามาก คนจึงใส่ผิดช่องกันบ่อย
+ *
+ * เดิมโค้ดอ่านแค่ช่อง build ทำให้ถ้าใส่ผิดช่องเว็บจะขึ้นโหมดตัวอย่างตลอดไป
+ * ตอนนี้อ่านทั้งสองที่ ใส่ช่องไหนก็ใช้ได้
+ */
+let runtimeEnv = null;
+try {
+  ({ env: runtimeEnv } = await import('cloudflare:workers'));
+} catch {
+  // ไม่ได้รันบน Cloudflare (เช่นตอนรัน unit test ด้วย node ตรงๆ) — ใช้ค่าจากตอน build แทน
+}
+
 let client = null;
 
 function getClient() {
-  const url = import.meta.env.PUBLIC_SUPABASE_URL;
-  const key = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const url = runtimeEnv?.PUBLIC_SUPABASE_URL || import.meta.env.PUBLIC_SUPABASE_URL;
+  const key = runtimeEnv?.PUBLIC_SUPABASE_ANON_KEY || import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
   // ใส่มาแค่ตัวเดียวแปลว่าตั้งใจจะเชื่อมแต่ทำไม่ครบ
   // ถ้าปล่อยให้ตกไปใช้ข้อมูลตัวอย่างเงียบๆ จะหาสาเหตุไม่เจอเลย จึงต้องดังไว้ก่อน
