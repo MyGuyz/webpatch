@@ -1,16 +1,15 @@
 ---
 import Base from '../../layouts/Base.astro';
-import { getConsoles, isUsingSeedData } from '../../lib/games.js';
+import { isUsingSeedData } from '../../lib/games.js';
 
-const consoles = await getConsoles();
 const usingSeed = isUsingSeedData();
 
 const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
 const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 ---
 
-<Base title="จัดการเกม — เกมไทย" description="หน้าจัดการสำหรับผู้ดูแลเว็บ">
-  <h1 class="page-head">จัดการเกม</h1>
+<Base title="รายงานบั๊ก — เกมไทย" description="หน้าจัดการสำหรับผู้ดูแลเว็บ">
+  <h1 class="page-head">รายงานบั๊ก</h1>
 
   {
     usingSeed && (
@@ -23,8 +22,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
   <p class="msg" id="page-msg" hidden></p>
 
-  <!-- ตอนโหลดหน้ายังไม่รู้ว่าล็อกอินอยู่หรือเปล่า จนกว่าจะถาม Supabase เสร็จ
-       จึงซ่อนทั้งสองส่วนไว้ก่อน กันไม่ให้ฟอร์มล็อกอินแวบขึ้นมาให้คนที่ล็อกอินอยู่แล้วเห็น -->
   <section class="cart" id="signin" hidden>
     <div class="cart__label"><span>เข้าสู่ระบบ</span></div>
     <div class="cart__body">
@@ -51,43 +48,45 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
     <p class="msg" id="list-msg" hidden></p>
 
-    <div class="toolbar">
-      <button class="btn btn--primary" id="add-btn">+ เพิ่มเกมใหม่</button>
-      <a class="btn btn--ghost" href="/admin/bug-reports">🐛 รายงานบั๊ก</a>
-    </div>
-
-    <div id="game-list" class="stack"></div>
+    <div id="report-list" class="stack"></div>
   </div>
 
-  <p class="back"><a href="/">← กลับหน้าแรก</a></p>
+  <p class="back"><a href="/admin">← กลับไปจัดการเกม</a></p>
 
-  <template id="game-row">
+  <template id="report-row">
     <article class="cart">
       <div class="cart__label">
         <span class="tag" data-status></span>
-        <span class="tag tag--console" data-console></span>
+        <span class="muted" data-date></span>
       </div>
       <div class="cart__body">
         <h2 class="row__title" data-title></h2>
-        <p class="muted mono" data-slug></p>
         <p class="muted" data-meta></p>
+        <p class="row__desc" data-desc></p>
+        <p class="muted" data-extra hidden></p>
+        <p class="muted" data-contact hidden></p>
+
+        <div class="row__media" data-media></div>
+
         <div class="row__actions">
-          <button class="btn btn--ghost btn--small" data-edit>แก้ไข</button>
-          <button class="btn btn--ghost btn--small" data-publish></button>
-          <button class="btn btn--ghost btn--small btn--danger" data-delete>ลบ</button>
+          <label class="field field--inline">
+            <span class="field__label">สถานะ</span>
+            <select data-status-select>
+              <option value="new">ใหม่</option>
+              <option value="triaged">รับเรื่องแล้ว</option>
+              <option value="fixed">แก้แล้ว</option>
+              <option value="wontfix">จะไม่แก้</option>
+            </select>
+          </label>
         </div>
       </div>
     </article>
   </template>
 
-  <script
-    is:inline
-    define:vars={{ supabaseUrl, supabaseKey, consolesJson: JSON.stringify(consoles) }}
-  >
+  <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
     window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
-    window.__CONSOLES__ = JSON.parse(consolesJson);
   </script>
-  <script src="../../scripts/admin-list.js"></script>
+  <script src="../../scripts/admin-bug-reports.js"></script>
 </Base>
 
 <style>
@@ -105,28 +104,41 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     flex-wrap: wrap;
   }
 
-  .toolbar {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 16px;
-  }
-
-  .toolbar .btn {
-    width: auto;
-    flex: 1;
-    min-width: 160px;
-  }
-
   .row__title {
     font-size: 1.08rem;
+  }
+
+  .row__desc {
+    white-space: pre-line;
+    margin: 8px 0 0;
+  }
+
+  .row__media {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 12px;
   }
 
   .row__actions {
     display: flex;
     gap: 8px;
-    margin-top: 12px;
+    margin-top: 14px;
     flex-wrap: wrap;
+    align-items: flex-end;
+  }
+
+  .field--inline {
+    width: auto;
+  }
+
+  .field--inline select {
+    padding: 8px 10px;
+    background: var(--surface);
+    border: 2px solid var(--edge);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-family: inherit;
   }
 
   .msg {
