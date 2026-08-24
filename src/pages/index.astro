@@ -85,12 +85,46 @@ const inProgress = games.filter((g) => g.status === 'wip');
 
 <style>
   .hero {
+    position: relative;
     margin: 18px 0 22px;
     background: linear-gradient(150deg, var(--clay-wash), var(--amber-wash));
+    overflow: hidden;
+  }
+
+  /* วงแหวนเรืองแสงลาง ๆ ด้านหลังหัวเรื่อง ชวนให้นึกถึงแสงไฟตั้งโต๊ะยามเย็น */
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    width: 280px;
+    height: 280px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: radial-gradient(circle, var(--amber) 0%, transparent 68%);
+    opacity: 0.4;
+    filter: blur(18px);
+    pointer-events: none;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    top: 46%;
+    left: 50%;
+    width: 210px;
+    height: 210px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    border: 2px solid var(--amber);
+    opacity: 0.3;
+    pointer-events: none;
   }
 
   .hero__body {
-    padding: 30px 20px 34px;
+    position: relative;
+    z-index: 1;
+    padding: 34px 20px 38px;
     text-align: center;
     /* เส้นสแกนจางๆ ให้ความรู้สึกจอ CRT */
     background-image: repeating-linear-gradient(
@@ -101,14 +135,15 @@ const inProgress = games.filter((g) => g.status === 'wip');
   }
 
   .hero__title {
-    font-size: 2.5rem;
+    font-size: 2.6rem;
     font-weight: 600;
     color: var(--clay-deep);
     letter-spacing: 0.02em;
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
   }
 
   .hero__tag {
-    margin: 8px 0 0;
+    margin: 10px 0 0;
     color: var(--ink-soft);
     font-size: 0.95rem;
   }

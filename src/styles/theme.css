@@ -110,7 +110,10 @@
 
 body {
   margin: 0;
-  background: var(--paper);
+  /* แสงอำพุ่งจากด้านบน ให้ความรู้สึกอบอุ่นแบบมุมเกมยามเย็น */
+  background:
+    radial-gradient(ellipse 900px 460px at 50% -12%, var(--amber-wash), transparent 62%),
+    var(--paper);
   color: var(--ink);
   font-family: var(--font-body);
   font-size: 16px;
