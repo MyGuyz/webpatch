@@ -1,23 +1,213 @@
 ---
 import Base from '../layouts/Base.astro';
+import { getReadyGames, getVersionsByGame, isUsingSeedData } from '../lib/games.js';
+
+const games = await getReadyGames();
+const versionsByGame = await getVersionsByGame(games);
+const usingSeed = isUsingSeedData();
+
+const gamesForClient = games.map((g) => ({
+  id: g.id,
+  title: g.title,
+  console: g.console?.name ?? null,
+  versions: versionsByGame[g.id] ?? [],
+}));
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 ---
 
 <Base title="แจ้งบั๊ก — เกมไทย" description="เจอคำแปลผิดหรือเกมค้าง บอกเราได้ที่นี่">
   <h1 class="page-head">แจ้งบั๊ก</h1>
+  <p class="muted lead">
+    เจอคำแปลผิด ตัวอักษรเพี้ยน หรือเกมค้างตรงไหน บอกเราได้ที่นี่ —
+    ต้องแนบภาพหรือวิดีโอประกอบด้วยอย่างน้อย 1 อย่าง จะได้ตามรอยได้ตรงจุด
+  </p>
 
-  <section class="cart">
-    <div class="cart__label"><span>กำลังทำอยู่</span></div>
-    <div class="cart__body">
-      <p>
-        หน้านี้ยังทำไม่เสร็จครับ 🐛 กำลังจะมีฟอร์มให้แจ้งคำแปลผิด ตัวอักษรเพี้ยน
-        หรือเกมค้าง พร้อมแนบภาพหน้าจอได้
+  {
+    usingSeed && (
+      <p class="note">
+        <strong>ยังไม่ได้ตั้งค่า Supabase</strong> — หน้านี้ยังส่งรายงานไม่ได้
       </p>
-      <a class="btn btn--ghost" href="/">← กลับหน้าแรก</a>
-    </div>
-  </section>
+    )
+  }
+
+  {
+    !usingSeed && games.length === 0 && (
+      <p class="muted">ยังไม่มีเกมที่พร้อมให้แปะในตอนนี้ เลยยังแจ้งบั๊กไม่ได้ครับ</p>
+    )
+  }
+
+  <p class="msg" id="msg" hidden></p>
+
+  {
+    !usingSeed && games.length > 0 && (
+      <form id="bug-form" class="stack">
+        <section class="cart">
+          <div class="cart__label"><span>1 · เกมและเวอร์ชัน</span></div>
+          <div class="cart__body">
+            <label class="field">
+              <span class="field__label">เกม</span>
+              <select name="game_id" id="game-select" required>
+                <option value="">— เลือกเกม —</option>
+              </select>
+              <span class="err" data-err="game_id"></span>
+            </label>
+
+            <label class="field">
+              <span class="field__label">เวอร์ชันแพตช์</span>
+              <select name="patch_version" id="version-select" required disabled>
+                <option value="">— เลือกเกมก่อน —</option>
+              </select>
+              <span class="err" data-err="patch_version"></span>
+            </label>
+          </div>
+        </section>
+
+        <section class="cart">
+          <div class="cart__label"><span>2 · รายละเอียด</span></div>
+          <div class="cart__body">
+            <label class="field">
+              <span class="field__label">อธิบายปัญหาที่เจอ *</span>
+              <textarea name="description" rows="4" required></textarea>
+              <span class="err" data-err="description"></span>
+            </label>
+
+            <label class="field">
+              <span class="field__label">เจอตรงไหนของเกม (ถ้ารู้)</span>
+              <input type="text" name="where_in_game" placeholder="เช่น บทที่ 3, ฉากเปิดเกม" />
+            </label>
+
+            <label class="field">
+              <span class="field__label">ข้อความที่แปลผิด (ถ้ามี)</span>
+              <textarea name="wrong_text" rows="2"></textarea>
+            </label>
+
+            <label class="field">
+              <span class="field__label">โปรแกรมจำลองที่ใช้เล่น (ถ้ารู้)</span>
+              <input type="text" name="emulator" placeholder="เช่น DuckStation, ePSXe" />
+            </label>
+          </div>
+        </section>
+
+        <section class="cart">
+          <div class="cart__label"><span>3 · แนบรูปหรือวิดีโอ *</span></div>
+          <div class="cart__body">
+            <label class="field">
+              <span class="field__label">เลือกไฟล์ (บังคับอย่างน้อย 1 ไฟล์ ไฟล์ละไม่เกิน 30MB)</span>
+              <input type="file" id="media-input" accept="image/*,video/*" multiple required />
+              <span class="err" data-err="media"></span>
+            </label>
+            <p class="muted" id="media-summary"></p>
+          </div>
+        </section>
+
+        <section class="cart">
+          <div class="cart__label"><span>4 · ติดต่อกลับ (ถ้าต้องการ)</span></div>
+          <div class="cart__body">
+            <label class="field">
+              <span class="field__label">อีเมลหรือ Discord (เผื่อเราอยากถามเพิ่ม)</span>
+              <input type="text" name="contact" placeholder="เว้นว่างได้" />
+            </label>
+
+            <label class="field field--trap" aria-hidden="true">
+              <span class="field__label">เว้นว่างไว้</span>
+              <input type="text" name="note_extra" tabindex="-1" autocomplete="off" />
+            </label>
+          </div>
+        </section>
+
+        <button class="btn btn--primary" type="submit" id="submit-btn">ส่งรายงาน</button>
+      </form>
+    )
+  }
+
+  <script
+    is:inline
+    define:vars={{ supabaseUrl, supabaseKey, gamesJson: JSON.stringify(gamesForClient) }}
+  >
+    window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
+    window.__GAMES__ = JSON.parse(gamesJson);
+  </script>
+  <script src="../scripts/report-bug-ui.js"></script>
 </Base>
 
 <style>
-  .page-head { font-size: 1.7rem; margin: 20px 0 12px; }
-  .btn { margin-top: 14px; }
+  .page-head {
+    font-size: 1.7rem;
+    margin: 20px 0 8px;
+  }
+
+  .lead {
+    margin: 0 0 16px;
+  }
+
+  .cart + .cart {
+    margin-top: 16px;
+  }
+
+  textarea,
+  input[type='text'] {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 2px solid var(--edge);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 1rem;
+  }
+
+  textarea {
+    resize: vertical;
+  }
+
+  input[type='file'] {
+    width: 100%;
+    padding: 11px;
+    background: var(--surface-sunken);
+    border: 2px dashed var(--edge);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.9rem;
+  }
+
+  #submit-btn {
+    margin: 4px 0 28px;
+  }
+
+  .field--trap {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
+  .err {
+    display: none;
+    margin-top: 5px;
+    font-size: 0.83rem;
+    color: var(--danger);
+  }
+
+  .err:not(:empty) {
+    display: block;
+  }
+
+  .msg {
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--clay);
+    background: var(--clay-wash);
+    font-size: 0.9rem;
+    margin: 0 0 14px;
+  }
+
+  .msg[data-kind='ok'] {
+    border-left-color: var(--teal);
+    background: var(--teal-wash);
+  }
 </style>

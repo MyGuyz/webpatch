@@ -72,6 +72,33 @@ export async function getReadyGames() {
   return games.filter((game) => game.status === 'ready' || game.status === 'beta');
 }
 
+/**
+ * เวอร์ชันแพตช์ที่เลือกได้ต่อเกม สำหรับฟอร์มแจ้งบั๊ก
+ *
+ * ยังไม่มีหน้า Admin ให้กรอก changelog เลย ตารางจึงมักว่างเปล่า
+ * จึงรวม patch_version ปัจจุบันของเกมเข้าไปด้วยเสมอ กันเวอร์ชันไม่มีให้เลือก
+ */
+export async function getVersionsByGame(games) {
+  const ids = games.map((g) => g.id);
+  const byGame = Object.fromEntries(
+    games.map((g) => [g.id, new Set(g.patch_version ? [g.patch_version] : [])])
+  );
+
+  const supabase = getClient();
+  if (supabase && ids.length > 0) {
+    const { data, error } = await supabase
+      .from('changelogs')
+      .select('game_id, version')
+      .in('game_id', ids)
+      .order('released_at', { ascending: false });
+
+    if (error) throw new Error(`อ่านเวอร์ชันแพตช์ไม่สำเร็จ: ${error.message}`);
+    for (const row of data ?? []) byGame[row.game_id]?.add(row.version);
+  }
+
+  return Object.fromEntries(Object.entries(byGame).map(([id, set]) => [id, [...set]]));
+}
+
 export async function getGameById(id) {
   const games = await getPublishedGames();
   return games.find((game) => String(game.id) === String(id)) ?? null;
