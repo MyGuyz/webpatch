@@ -11,6 +11,9 @@ const pageMsg = el('page-msg');
 const listMsg = el('list-msg');
 const listBox = el('report-list');
 const rowTemplate = el('report-row');
+const statusFilter = el('status-filter');
+
+let allReports = [];
 
 const STATUS_LABELS = {
   new: { text: 'ใหม่', className: 'tag--wip' },
@@ -70,6 +73,8 @@ el('signout').addEventListener('click', async () => {
   await supabase.auth.signOut();
 });
 
+statusFilter.addEventListener('change', renderList);
+
 // ── รายการรายงานบั๊ก ──────────────────────────────────────
 
 async function loadReports() {
@@ -92,14 +97,27 @@ async function loadReports() {
     return;
   }
 
+  allReports = data;
+  renderList();
+}
+
+function renderList() {
+  const filter = statusFilter.value;
+  const reports = filter ? allReports.filter((r) => r.status === filter) : allReports;
+
   listBox.textContent = '';
 
-  if (data.length === 0) {
+  if (allReports.length === 0) {
     listBox.innerHTML = '<p class="muted">ยังไม่มีรายงานบั๊กเข้ามาครับ</p>';
     return;
   }
 
-  for (const report of data) listBox.appendChild(buildRow(report));
+  if (reports.length === 0) {
+    listBox.innerHTML = '<p class="muted">ไม่มีรายงานที่อยู่ในสถานะนี้</p>';
+    return;
+  }
+
+  for (const report of reports) listBox.appendChild(buildRow(report));
 }
 
 function buildRow(report) {
@@ -182,4 +200,5 @@ async function updateStatus(report, select) {
     return;
   }
   report.status = select.value;
+  renderList();
 }

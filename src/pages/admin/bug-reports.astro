@@ -48,6 +48,19 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
     <p class="msg" id="list-msg" hidden></p>
 
+    <div class="filter-row">
+      <label class="field field--inline">
+        <span class="field__label">แสดงเฉพาะสถานะ</span>
+        <select id="status-filter">
+          <option value="">ทั้งหมด</option>
+          <option value="new">ใหม่</option>
+          <option value="triaged">รับเรื่องแล้ว</option>
+          <option value="fixed">แก้แล้ว</option>
+          <option value="wontfix">จะไม่แก้</option>
+        </select>
+      </label>
+    </div>
+
     <div id="report-list" class="stack"></div>
   </div>
 
@@ -139,6 +152,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     border-radius: var(--radius-sm);
     color: var(--ink);
     font-family: inherit;
+  }
+
+  .filter-row {
+    margin-bottom: 14px;
   }
 
   .msg {
