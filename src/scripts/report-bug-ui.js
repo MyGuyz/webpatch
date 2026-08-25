@@ -1,5 +1,6 @@
 import { getSupabase, showMessage, hideMessage } from '../lib/admin-client.js';
 import { buildBugReportPayload, explainBugReportError, formatSize } from '../lib/bug-report-form.js';
+import { compressImageIfNeeded } from '../lib/compress-image.js';
 
 const games = window.__GAMES__ ?? [];
 
@@ -99,7 +100,17 @@ function start() {
     submitBtn.textContent = 'กำลังส่ง...';
 
     try {
-      const mediaPaths = await uploadFiles(files);
+      const guard = await checkRateLimit();
+      if (!guard.allowed) {
+        showMessage(msg, guard.message);
+        return;
+      }
+
+      submitBtn.textContent = 'กำลังย่อรูป...';
+      const filesToUpload = await Promise.all(files.map(compressImageIfNeeded));
+
+      submitBtn.textContent = 'กำลังส่ง...';
+      const mediaPaths = await uploadFiles(filesToUpload);
 
       const { error } = await supabase
         .from('bug_reports')
@@ -116,6 +127,16 @@ function start() {
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'ส่งรายงาน';
+    }
+  }
+
+  async function checkRateLimit() {
+    try {
+      const response = await fetch('/api/bug-report-guard', { method: 'POST' });
+      return await response.json();
+    } catch {
+      // เช็คไม่สำเร็จ (เช่นออฟไลน์) — ปล่อยผ่าน อย่าบล็อกคนแจ้งบั๊กจริงเพราะปัญหาที่ไม่เกี่ยวกับเขา
+      return { allowed: true };
     }
   }
 

@@ -5,7 +5,9 @@
  * พอจะทดสอบได้จริง ฐานข้อมูลมีกฎของตัวเองคุมอีกชั้น (ดู supabase/migrations/)
  */
 
-export const MAX_FILE_BYTES = 30 * 1024 * 1024;
+/** ต้นฉบับก่อนบีบอัด — ดู compress-image.js ที่ย่อรูปให้เหลือเล็กกว่านี้มากก่อนอัปโหลดจริง */
+export const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+export const MAX_VIDEO_BYTES = 30 * 1024 * 1024;
 
 export const ALLOWED_MIME_TYPES = [
   'image/jpeg',
@@ -51,7 +53,11 @@ export function buildBugReportPayload(form, files) {
   };
 }
 
-/** บังคับแนบรูปหรือวิดีโออย่างน้อย 1 ไฟล์ ไฟล์ละไม่เกิน 30MB (ดู ADR-009) */
+/**
+ * บังคับแนบรูปหรือวิดีโออย่างน้อย 1 ไฟล์ (ดู ADR-009)
+ * รูปเพดาน 15MB (ระบบย่อให้อัตโนมัติก่อนอัปโหลดจริง — ดู compress-image.js)
+ * วิดีโอเพดาน 30MB (บีบอัดวิดีโอในเบราว์เซอร์ยังไม่คุ้มทำ เลยยังไม่มี auto-compress ให้)
+ */
 export function validateFiles(files) {
   if (!files || files.length === 0) {
     return 'ต้องแนบรูปหรือวิดีโออย่างน้อย 1 ไฟล์';
@@ -60,8 +66,14 @@ export function validateFiles(files) {
     if (!ALLOWED_MIME_TYPES.includes(file.type)) {
       return `"${file.name}" ไม่ใช่รูปหรือวิดีโอที่รองรับ`;
     }
-    if (file.size > MAX_FILE_BYTES) {
-      return `"${file.name}" ใหญ่เกิน 30MB (${formatSize(file.size)}) — ลองบีบอัดหรือตัดคลิปให้สั้นลง`;
+    const isImage = file.type.startsWith('image/');
+    const limit = isImage ? MAX_IMAGE_BYTES : MAX_VIDEO_BYTES;
+    if (file.size > limit) {
+      const limitLabel = isImage ? '15MB' : '30MB';
+      const hint = isImage
+        ? 'ลองเลือกรูปที่มีขนาดไฟล์เล็กกว่านี้'
+        : 'ลองบีบอัดหรือตัดคลิปให้สั้นลง';
+      return `"${file.name}" ใหญ่เกิน ${limitLabel} (${formatSize(file.size)}) — ${hint}`;
     }
   }
   return null;

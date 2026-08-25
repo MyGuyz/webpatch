@@ -94,10 +94,14 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
           <div class="cart__label"><span>3 · แนบรูปหรือวิดีโอ *</span></div>
           <div class="cart__body">
             <label class="field">
-              <span class="field__label">เลือกไฟล์ (บังคับอย่างน้อย 1 ไฟล์ ไฟล์ละไม่เกิน 30MB)</span>
+              <span class="field__label">เลือกไฟล์ (บังคับอย่างน้อย 1 ไฟล์)</span>
               <input type="file" id="media-input" accept="image/*,video/*" multiple required />
               <span class="err" data-err="media"></span>
             </label>
+            <p class="muted">
+              รูปภาพ: ไม่เกิน 15MB ต่อไฟล์ (ไฟล์ใหญ่ระบบย่อให้อัตโนมัติก่อนอัปโหลด) ·
+              วิดีโอ: ไม่เกิน 30MB ต่อไฟล์
+            </p>
             <p class="muted" id="media-summary"></p>
           </div>
         </section>
@@ -118,6 +122,11 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         </section>
 
         <button class="btn btn--primary" type="submit" id="submit-btn">ส่งรายงาน</button>
+
+        <p class="muted spam-note">
+          🛡️ ระบบจำกัดจำนวนครั้งที่ส่งได้ต่อเครือข่ายในช่วงเวลาสั้นๆ เพื่อกันสแปม
+          ข้อมูลที่ใช้ตรวจเป็นรหัสสับ (hash) ของ IP เท่านั้น แปลงกลับเป็น IP จริงไม่ได้
+        </p>
       </form>
     )
   }
@@ -174,7 +183,12 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
   }
 
   #submit-btn {
-    margin: 4px 0 28px;
+    margin: 4px 0 10px;
+  }
+
+  .spam-note {
+    margin: 0 0 28px;
+    font-size: 0.8rem;
   }
 
   .field--trap {

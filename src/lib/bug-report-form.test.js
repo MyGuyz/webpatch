@@ -1,6 +1,6 @@
 import { test, describe } from 'node:test';
 import assert from 'node:assert/strict';
-import { buildBugReportPayload, validateFiles, MAX_FILE_BYTES } from './bug-report-form.js';
+import { buildBugReportPayload, validateFiles, MAX_IMAGE_BYTES, MAX_VIDEO_BYTES } from './bug-report-form.js';
 
 const image = (overrides = {}) => ({
   name: 'screenshot.png',
@@ -76,17 +76,26 @@ describe('ฟอร์มแจ้งบั๊ก', () => {
       assert.ok(error);
     });
 
-    test('ไฟล์เกิน 30MB ถูกปฏิเสธ', () => {
-      const error = validateFiles([image({ size: MAX_FILE_BYTES + 1 })]);
+    test('รูปเกิน 15MB ถูกปฏิเสธ', () => {
+      const error = validateFiles([image({ size: MAX_IMAGE_BYTES + 1 })]);
       assert.ok(error);
     });
 
-    test('ไฟล์พอดี 30MB ผ่านได้', () => {
-      assert.equal(validateFiles([image({ size: MAX_FILE_BYTES })]), null);
+    test('รูปพอดี 15MB ผ่านได้', () => {
+      assert.equal(validateFiles([image({ size: MAX_IMAGE_BYTES })]), null);
+    });
+
+    test('วิดีโอเกิน 30MB ถูกปฏิเสธ', () => {
+      const error = validateFiles([image({ name: 'clip.mp4', type: 'video/mp4', size: MAX_VIDEO_BYTES + 1 })]);
+      assert.ok(error);
+    });
+
+    test('วิดีโอพอดี 30MB ผ่านได้', () => {
+      assert.equal(validateFiles([image({ name: 'clip.mp4', type: 'video/mp4', size: MAX_VIDEO_BYTES })]), null);
     });
 
     test('หลายไฟล์ ถ้ามีไฟล์เดียวผิดก็ไม่ผ่านทั้งชุด', () => {
-      const error = validateFiles([image(), image({ name: 'huge.mp4', type: 'video/mp4', size: MAX_FILE_BYTES + 1 })]);
+      const error = validateFiles([image(), image({ name: 'huge.mp4', type: 'video/mp4', size: MAX_VIDEO_BYTES + 1 })]);
       assert.ok(error);
     });
   });
