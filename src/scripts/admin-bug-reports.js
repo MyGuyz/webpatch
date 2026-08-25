@@ -165,6 +165,9 @@ function buildRow(report) {
   statusSelect.value = report.status;
   statusSelect.addEventListener('change', () => updateStatus(report, statusSelect));
 
+  const deleteBtn = node.querySelector('[data-delete]');
+  deleteBtn.addEventListener('click', () => deleteReport(report, deleteBtn));
+
   return node;
 }
 
@@ -184,6 +187,36 @@ async function openAttachment(path, button) {
   }
 
   window.open(data.signedUrl, '_blank', 'noopener');
+}
+
+async function deleteReport(report, button) {
+  const ok = confirm(`ลบรายงานนี้ทิ้งถาวร?\n\n"${report.description.slice(0, 80)}"\n\nกู้คืนไม่ได้นะครับ`);
+  if (!ok) return;
+
+  button.disabled = true;
+  button.textContent = 'กำลังลบ...';
+
+  if (report.media_paths?.length) {
+    const { error: storageError } = await supabase.storage.from('bug-reports').remove(report.media_paths);
+    if (storageError) {
+      showMessage(listMsg, `ลบไฟล์แนบไม่สำเร็จ: ${storageError.message}`);
+      button.disabled = false;
+      button.textContent = 'ลบ';
+      return;
+    }
+  }
+
+  const { error } = await supabase.from('bug_reports').delete().eq('id', report.id);
+
+  if (error) {
+    showMessage(listMsg, `ลบรายงานไม่สำเร็จ: ${error.message}`);
+    button.disabled = false;
+    button.textContent = 'ลบ';
+    return;
+  }
+
+  allReports = allReports.filter((r) => r.id !== report.id);
+  renderList();
 }
 
 async function updateStatus(report, select) {
