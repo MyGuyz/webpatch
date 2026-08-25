@@ -36,7 +36,16 @@ const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
       )
     }
 
-    {href && <a class="btn btn--primary" href={href}>ไปแปะแพตช์</a>}
+    <div class="game__actions">
+      {href && <a class="btn btn--primary" href={href}>ไปแปะแพตช์</a>}
+      {
+        game.cover_url && (
+          <a class="btn btn--ghost btn--small" href={game.cover_url} download target="_blank" rel="noopener">
+            ⬇ ภาพปก
+          </a>
+        )
+      }
+    </div>
   </div>
 </article>
 
@@ -62,7 +71,15 @@ const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
     font-size: 0.92rem;
   }
 
-  .btn {
+  .game__actions {
+    display: flex;
+    gap: 8px;
     margin-top: 14px;
+    flex-wrap: wrap;
+  }
+
+  .game__actions .btn--primary {
+    flex: 1;
+    min-width: 140px;
   }
 </style>
