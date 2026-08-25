@@ -82,6 +82,7 @@ function showGame(game) {
   if (game.patch_version) parts.push(`แพตช์ ${game.patch_version}`);
   if (game.patch_format) parts.push(`.${game.patch_format}`);
   if (game.patch_updated_at) parts.push(`อัปเดต ${game.patch_updated_at}`);
+  if (game.download_count) parts.push(`📥 แปะไปแล้ว ${game.download_count.toLocaleString('th-TH')} ครั้ง`);
   el('info-version').textContent = parts.join(' · ');
 
   el('info-spec').textContent = game.source_spec ?? 'ไม่ได้ระบุ';

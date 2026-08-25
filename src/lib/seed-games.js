@@ -31,6 +31,7 @@ export const SEED_GAMES = [
     source_sha1: '494179714a6cd627239dfededf2de9ef994caf03',
     progress_stage: 5,
     progress_percent: 100,
+    download_count: 128,
     is_published: true,
   },
   {
@@ -50,6 +51,7 @@ export const SEED_GAMES = [
     source_sha1: null,
     progress_stage: 5,
     progress_percent: 100,
+    download_count: 47,
     is_published: true,
   },
   {
@@ -69,6 +71,7 @@ export const SEED_GAMES = [
     source_sha1: null,
     progress_stage: 4,
     progress_percent: 82,
+    download_count: 0,
     is_published: true,
   },
 ];

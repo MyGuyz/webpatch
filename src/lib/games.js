@@ -49,7 +49,7 @@ export function isUsingSeedData() {
 const GAME_FIELDS = `
   id, slug, title, subtitle, status, cover_url, description,
   patch_version, patch_format, patch_url, patch_updated_at,
-  source_spec, source_sha1, progress_stage, progress_percent,
+  source_spec, source_sha1, progress_stage, progress_percent, download_count,
   console:consoles ( id, name, slug, sort_order )
 `;
 

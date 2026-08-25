@@ -32,6 +32,7 @@ const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
         <p class="muted">
           แพตช์ <strong>{game.patch_version}</strong>
           {game.patch_updated_at && <> · อัปเดต {game.patch_updated_at}</>}
+          {Boolean(game.download_count) && <> · 📥 แปะไปแล้ว {game.download_count.toLocaleString('th-TH')} ครั้ง</>}
         </p>
       )
     }
