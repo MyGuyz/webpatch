@@ -8,9 +8,6 @@ const suggestForm = el('suggest-form');
 
 const supabase = getSupabase();
 
-/** จำไว้ในเครื่องว่าเคยกดโหวตอันไหนไปแล้ว เอาไว้ปิดปุ่มไม่ให้กดซ้ำ (เซิร์ฟเวอร์กันจริงอีกชั้นอยู่แล้ว) */
-const votedIds = new Set(JSON.parse(localStorage.getItem('votedGameRequests') ?? '[]'));
-
 if (supabase) {
   loadRequests();
 }
@@ -18,8 +15,7 @@ if (supabase) {
 async function loadRequests() {
   const { data, error } = await supabase
     .from('game_requests')
-    .select('id, title, note, vote_count')
-    .order('vote_count', { ascending: false })
+    .select('id, title, note')
     .order('created_at', { ascending: true });
 
   if (error) {
@@ -41,59 +37,22 @@ function buildRow(item) {
   row.className = 'cart';
 
   const body = document.createElement('div');
-  body.className = 'cart__body request-row';
+  body.className = 'cart__body';
 
-  const text = document.createElement('div');
   const title = document.createElement('h3');
   title.className = 'request-row__title';
   title.textContent = item.title;
-  text.appendChild(title);
+  body.appendChild(title);
+
   if (item.note) {
     const note = document.createElement('p');
     note.className = 'muted request-row__note';
     note.textContent = item.note;
-    text.appendChild(note);
+    body.appendChild(note);
   }
 
-  const voteBtn = document.createElement('button');
-  voteBtn.type = 'button';
-  voteBtn.className = 'vote-btn';
-  const alreadyVoted = votedIds.has(item.id);
-  voteBtn.disabled = alreadyVoted;
-  voteBtn.innerHTML = `<span class="vote-btn__count">${alreadyVoted ? '✓' : '▲'} ${item.vote_count}</span><span class="vote-btn__label">โหวต</span>`;
-  voteBtn.addEventListener('click', () => vote(item.id, voteBtn));
-
-  body.append(text, voteBtn);
   row.appendChild(body);
   return row;
-}
-
-async function vote(requestId, button) {
-  button.disabled = true;
-
-  try {
-    const response = await fetch('/api/vote-game-request', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ request_id: requestId }),
-    });
-    const result = await response.json();
-
-    if (!result.ok) {
-      if (!result.alreadyVoted) {
-        showMessage(msg, result.message ?? 'โหวตไม่สำเร็จ ลองใหม่อีกครั้ง');
-        button.disabled = false;
-        return;
-      }
-    }
-
-    votedIds.add(requestId);
-    localStorage.setItem('votedGameRequests', JSON.stringify([...votedIds]));
-    await loadRequests();
-  } catch {
-    showMessage(msg, 'โหวตไม่สำเร็จ เช็คอินเทอร์เน็ตแล้วลองใหม่');
-    button.disabled = false;
-  }
 }
 
 // ── แนะนำเกมใหม่ ──────────────────────────────────────────

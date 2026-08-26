@@ -78,7 +78,7 @@ async function loadRequests() {
   const { data, error } = await supabase
     .from('game_requests')
     .select('*')
-    .order('vote_count', { ascending: false });
+    .order('created_at', { ascending: true });
 
   if (error) {
     listBox.textContent = '';
@@ -109,7 +109,6 @@ function buildRow(request) {
   statusEl.className = `tag ${status.className}`;
   statusEl.textContent = status.text;
 
-  node.querySelector('[data-votes]').textContent = `▲ ${request.vote_count} โหวต`;
   node.querySelector('[data-title]').textContent = request.title;
 
   if (request.note) {

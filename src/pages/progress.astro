@@ -46,12 +46,12 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
   <section class="requests">
     <h2 class="page-head requests__head">อยากให้แปลเกมไหนต่อ?</h2>
-    <p class="muted lead">โหวตเกมที่อยากให้ทำ หรือแนะนำเกมใหม่ที่ยังไม่มีในลิสต์ได้เลย</p>
+    <p class="muted lead">แนะนำเกมที่อยากให้ทำได้เลย ทีมจะเอาไปพิจารณาต่อ</p>
 
     {
       usingSeed && (
         <p class="note">
-          <strong>ยังไม่ได้เชื่อม Supabase</strong> — โหวต/แนะนำเกมยังใช้ไม่ได้ในโหมดตัวอย่าง
+          <strong>ยังไม่ได้เชื่อม Supabase</strong> — แนะนำเกมยังใช้ไม่ได้ในโหมดตัวอย่าง
         </p>
       )
     }
@@ -109,50 +109,8 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
   .requests { margin-top: 34px; }
   .requests__head { margin: 0 0 8px; }
 
-  .request-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 14px;
-  }
-
   .request-row__title { font-size: 1.02rem; margin: 0; }
   .request-row__note { margin: 4px 0 0; }
-
-  .vote-btn {
-    flex: none;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 2px;
-    width: 60px;
-    padding: 8px 0;
-    border: 2px solid var(--edge);
-    border-radius: var(--radius-sm);
-    background: var(--surface-sunken);
-    color: var(--ink);
-    font-family: inherit;
-    font-weight: 600;
-    cursor: pointer;
-  }
-
-  .vote-btn:active:not(:disabled) {
-    transform: translateY(1px);
-  }
-
-  .vote-btn:disabled {
-    opacity: 0.6;
-    cursor: default;
-  }
-
-  .vote-btn__count {
-    font-size: 1.1rem;
-  }
-
-  .vote-btn__label {
-    font-size: 0.68rem;
-    color: var(--ink-soft);
-  }
 
   #suggest-form {
     margin-top: 16px;
