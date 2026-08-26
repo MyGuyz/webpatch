@@ -1,43 +1,50 @@
 /*
- * ธีม "ตลับเกมยามเย็น" — retro อบอุ่น
+ * ธีม "ตลับเกมยามเย็น" — พิกเซล/เกมเมอร์ยุค 8-bit
  *
- * ต่างจากนอนแปลตรงที่ไม่ใช้กระดาษสีครีม+เขียวป่า+กรอบประดับ
- * แต่ใช้ดินเผา + เขียวหัวเป็ด + กรอบทรงตลับเกมที่มีแถบฉลากด้านบน
+ * เส้นขอบหนา + เงาทึบเหลื่อม (offset shadow) แทนขอบมนนุ่มๆ ของธีมเดิม
+ * สีสด: แดง/น้ำเงิน/เขียว/ทอง แบบตลับเกมยุค 90s
  */
 
 :root {
-  /* พื้นหลังไล่จากอ่อนไปเข้ม */
-  --paper: #f6ece0;
-  --surface: #fffaf3;
-  --surface-sunken: #efe2d2;
-  --edge: #d8c4ae;
+  /* พื้นหลัง */
+  --paper: #f4ecd0;
+  --surface: #fffaf0;
+  --surface-sunken: #ffe9ae;
+  --edge: #221a10;
 
   /* ตัวอักษร */
-  --ink: #3a2b21;
-  --ink-soft: #7a6555;
+  --ink: #221a10;
+  --ink-soft: #6b5c3f;
 
-  /* สีหลัก: ดินเผา */
-  --clay: #c2542f;
-  --clay-deep: #9c3f21;
-  --clay-wash: #f7ddd0;
+  /* สีหลัก: แดง */
+  --clay: #e2402a;
+  --clay-deep: #a82c1a;
+  --clay-wash: #ffe0da;
 
-  /* สีรอง: เขียวหัวเป็ด */
-  --teal: #2b6f66;
-  --teal-wash: #d6e8e3;
+  /* สีรอง: เขียว */
+  --teal: #3f9e46;
+  --teal-deep: #276b2c;
+  --teal-wash: #dcf3dd;
 
-  /* สีเน้น: เหลืองมัสตาร์ด */
-  --amber: #d9982c;
-  --amber-wash: #faeccd;
+  /* สีเน้น: ทอง */
+  --amber: #f2b705;
+  --amber-deep: #b9860a;
+  --amber-wash: #fff3c4;
 
-  --danger: #b5321f;
+  /* สีเสริม: น้ำเงิน */
+  --blue: #2f6fd6;
+  --blue-deep: #1f4a94;
 
-  --radius: 14px;
-  --radius-sm: 9px;
-  --shadow: 0 2px 0 var(--edge);
-  --shadow-lift: 0 6px 18px rgba(58, 43, 33, 0.13);
+  --danger: #a82c1a;
 
-  --font-display: 'Mitr', 'Trebuchet MS', sans-serif;
-  --font-body: 'IBM Plex Sans Thai', -apple-system, sans-serif;
+  --radius: 0px;
+  --radius-sm: 0px;
+  --shadow: 4px 4px 0 var(--edge);
+  --shadow-lift: 6px 6px 0 var(--edge);
+
+  --font-display: 'Chakra Petch', 'Noto Sans Thai', sans-serif;
+  --font-body: 'Chakra Petch', 'Noto Sans Thai', sans-serif;
+  --font-pixel: 'Press Start 2P', monospace;
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 
   --nav-height: 68px;
@@ -45,54 +52,64 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --paper: #1f1913;
-    --surface: #2b231b;
-    --surface-sunken: #171210;
-    --edge: #453629;
+    --paper: #1b140c;
+    --surface: #241b10;
+    --surface-sunken: #3a2c14;
+    --edge: #f4ecd0;
 
-    --ink: #f2e5d6;
-    --ink-soft: #b0997f;
+    --ink: #f4ecd0;
+    --ink-soft: #cbb98f;
 
-    --clay: #e0764c;
-    --clay-deep: #c2542f;
-    --clay-wash: #40251a;
+    --clay: #e8563c;
+    --clay-deep: #ff8266;
+    --clay-wash: #3a1c14;
 
-    --teal: #57a396;
-    --teal-wash: #1c3330;
+    --teal: #5fc767;
+    --teal-deep: #8fe094;
+    --teal-wash: #17301a;
 
-    --amber: #e8b455;
-    --amber-wash: #3a2c14;
+    --amber: #e8c22f;
+    --amber-deep: #f2d873;
+    --amber-wash: #362a0e;
 
-    --danger: #e0705c;
+    --blue: #5b8fe0;
+    --blue-deep: #8bb0ec;
 
-    --shadow: 0 2px 0 #14100c;
-    --shadow-lift: 0 6px 18px rgba(0, 0, 0, 0.45);
+    --danger: #ff8266;
+
+    --shadow: 4px 4px 0 var(--edge);
+    --shadow-lift: 6px 6px 0 var(--edge);
   }
 }
 
 :root[data-theme='dark'] {
-  --paper: #1f1913;
-  --surface: #2b231b;
-  --surface-sunken: #171210;
-  --edge: #453629;
+  --paper: #1b140c;
+  --surface: #241b10;
+  --surface-sunken: #3a2c14;
+  --edge: #f4ecd0;
 
-  --ink: #f2e5d6;
-  --ink-soft: #b0997f;
+  --ink: #f4ecd0;
+  --ink-soft: #cbb98f;
 
-  --clay: #e0764c;
-  --clay-deep: #c2542f;
-  --clay-wash: #40251a;
+  --clay: #e8563c;
+  --clay-deep: #ff8266;
+  --clay-wash: #3a1c14;
 
-  --teal: #57a396;
-  --teal-wash: #1c3330;
+  --teal: #5fc767;
+  --teal-deep: #8fe094;
+  --teal-wash: #17301a;
 
-  --amber: #e8b455;
-  --amber-wash: #3a2c14;
+  --amber: #e8c22f;
+  --amber-deep: #f2d873;
+  --amber-wash: #362a0e;
 
-  --danger: #e0705c;
+  --blue: #5b8fe0;
+  --blue-deep: #8bb0ec;
 
-  --shadow: 0 2px 0 #14100c;
-  --shadow-lift: 0 6px 18px rgba(0, 0, 0, 0.45);
+  --danger: #ff8266;
+
+  --shadow: 4px 4px 0 var(--edge);
+  --shadow-lift: 6px 6px 0 var(--edge);
 }
 
 * {
@@ -110,9 +127,8 @@
 
 body {
   margin: 0;
-  /* แสงอำพุ่งจากด้านบน ให้ความรู้สึกอบอุ่นแบบมุมเกมยามเย็น */
   background:
-    radial-gradient(ellipse 900px 460px at 50% -12%, var(--amber-wash), transparent 62%),
+    repeating-linear-gradient(45deg, rgba(34, 26, 16, 0.035) 0 2px, transparent 2px 14px),
     var(--paper);
   color: var(--ink);
   font-family: var(--font-body);
@@ -124,7 +140,7 @@ body {
 
 h1, h2, h3 {
   font-family: var(--font-display);
-  font-weight: 500;
+  font-weight: 700;
   line-height: 1.3;
   margin: 0;
 }
@@ -140,15 +156,14 @@ a {
 }
 
 /* ── ตลับเกม: องค์ประกอบเด่นของธีมนี้ ─────────────────────────
-   การ์ดทุกใบเป็นทรงตลับ มีแถบฉลากด้านบนและร่องจับด้านข้าง */
+   การ์ดทุกใบเป็นทรงตลับ ขอบหนา เงาทึบเหลื่อมมุม ไม่มีมุมมน */
 
 .cart {
   position: relative;
   background: var(--surface);
-  border: 2px solid var(--edge);
+  border: 3px solid var(--edge);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  overflow: hidden;
 }
 
 .cart__label {
@@ -156,27 +171,14 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  padding: 9px 14px;
+  padding: 8px 12px;
   background: var(--surface-sunken);
-  border-bottom: 2px solid var(--edge);
+  border-bottom: 3px solid var(--edge);
   font-family: var(--font-display);
-  font-size: 0.82rem;
-  letter-spacing: 0.06em;
-  color: var(--ink-soft);
-}
-
-/* ร่องจับแบบตลับเกม — ขีดสั้นๆ เรียงกันบนแถบฉลาก */
-.cart__label::after {
-  content: '';
-  flex: none;
-  width: 34px;
-  height: 10px;
-  border-radius: 2px;
-  background: repeating-linear-gradient(
-    90deg,
-    var(--edge) 0 3px,
-    transparent 3px 6px
-  );
+  font-weight: 700;
+  font-size: 0.85rem;
+  letter-spacing: 0.03em;
+  color: var(--ink);
 }
 
 .cart__body {
@@ -189,31 +191,24 @@ a {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 10px;
-  border-radius: 999px;
-  font-size: 0.76rem;
-  font-weight: 600;
+  padding: 3px 9px;
+  border: 2px solid var(--edge);
+  border-radius: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
   white-space: nowrap;
 }
 
-.tag--ready { background: var(--teal-wash); color: var(--teal); }
-.tag--beta { background: var(--amber-wash); color: var(--amber); }
-.tag--wip { background: var(--clay-wash); color: var(--clay-deep); }
+.tag--ready { background: var(--teal); color: #f3fff0; }
+.tag--beta { background: var(--amber); color: var(--ink); }
+.tag--wip { background: var(--clay); color: #fff8e8; }
 .tag--console {
-  background: transparent;
-  border: 1.5px solid var(--edge);
+  background: var(--surface);
   color: var(--ink-soft);
   font-family: var(--font-mono);
-  letter-spacing: 0.04em;
-}
-
-.tag--ready::before,
-.tag--beta::before {
-  content: '';
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: currentColor;
+  letter-spacing: 0.02em;
 }
 
 /* ── ปุ่ม ─────────────────────────────────────────────────── */
@@ -225,17 +220,22 @@ a {
   gap: 8px;
   width: 100%;
   padding: 14px 18px;
-  border: 2px solid transparent;
-  border-radius: var(--radius-sm);
+  border: 3px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--ink);
   font-family: var(--font-display);
+  font-weight: 700;
   font-size: 1rem;
   cursor: pointer;
-  transition: transform 0.08s ease, filter 0.15s ease;
   text-decoration: none;
+  box-shadow: var(--shadow);
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
 }
 
 .btn:active:not(:disabled) {
-  transform: translateY(2px);
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--edge);
 }
 
 .btn:disabled {
@@ -244,31 +244,30 @@ a {
 }
 
 .btn--primary {
-  background: var(--clay);
-  color: #fff;
-  box-shadow: 0 3px 0 var(--clay-deep);
-}
-
-.btn--primary:active:not(:disabled) {
-  box-shadow: 0 1px 0 var(--clay-deep);
+  background: var(--amber);
+  color: var(--ink);
 }
 
 .btn--ghost {
-  background: transparent;
-  border-color: var(--edge);
+  background: var(--surface);
   color: var(--ink);
 }
 
 /* ปุ่มรองในแถวรายการ — ไม่ต้องกินความกว้างเต็มบรรทัด */
 .btn--small {
   width: auto;
-  padding: 8px 14px;
+  padding: 9px 14px;
   font-size: 0.87rem;
+  box-shadow: 3px 3px 0 var(--edge);
+}
+
+.btn--small:active:not(:disabled) {
+  box-shadow: 0 0 0 var(--edge);
 }
 
 .btn--danger {
-  color: var(--danger);
-  border-color: var(--danger);
+  color: var(--clay-deep);
+  border-color: var(--clay-deep);
 }
 
 /* ── ช่องกรอก ─────────────────────────────────────────────── */
@@ -281,23 +280,24 @@ a {
 .field__label {
   display: block;
   margin-bottom: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.83rem;
   color: var(--ink-soft);
 }
 
-select, input[type='text'] {
+select, input[type='text'], textarea {
   width: 100%;
   padding: 12px 14px;
   background: var(--surface);
   border: 2px solid var(--edge);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius);
   color: var(--ink);
   font-family: inherit;
   font-size: 1rem;
 }
 
-select:focus, input:focus, .btn:focus-visible, a:focus-visible {
+select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
   outline: 3px solid var(--amber);
   outline-offset: 2px;
 }
@@ -312,9 +312,8 @@ select:focus, input:focus, .btn:focus-visible, a:focus-visible {
   z-index: 20;
   display: flex;
   background: var(--surface);
-  border-top: 2px solid var(--edge);
+  border-top: 3px solid var(--edge);
   padding-bottom: env(safe-area-inset-bottom);
-  box-shadow: 0 -4px 14px rgba(58, 43, 33, 0.07);
 }
 
 .nav__item {
@@ -327,19 +326,19 @@ select:focus, input:focus, .btn:focus-visible, a:focus-visible {
   height: var(--nav-height);
   color: var(--ink-soft);
   text-decoration: none;
-  font-size: 0.72rem;
-  border-top: 3px solid transparent;
-  margin-top: -2px;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.7rem;
 }
 
 .nav__item[aria-current='page'] {
-  color: var(--clay-deep);
-  border-top-color: var(--clay);
-  background: var(--clay-wash);
+  color: var(--ink);
+  background: var(--amber);
+  box-shadow: inset 0 3px 0 var(--edge);
 }
 
 .nav__icon {
-  font-size: 1.28rem;
+  font-size: 1.3rem;
   line-height: 1;
 }
 
@@ -361,7 +360,7 @@ select:focus, input:focus, .btn:focus-visible, a:focus-visible {
 }
 
 .log__line--error { color: var(--danger); }
-.log__line--ok { color: var(--teal); }
+.log__line--ok { color: var(--teal-deep); }
 
 /* ── อื่นๆ ─────────────────────────────────────────────────── */
 
@@ -369,7 +368,6 @@ select:focus, input:focus, .btn:focus-visible, a:focus-visible {
   border-left: 4px solid var(--amber);
   background: var(--amber-wash);
   padding: 11px 14px;
-  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
   font-size: 0.87rem;
 }
 

@@ -13,12 +13,17 @@ const inProgress = games.filter((g) => g.status === 'wip');
 
 <Base title="เกมไทย — แพตช์แปลไทยสำหรับเกมย้อนยุค">
   <header class="hero cart">
-    <div class="cart__label">
-      <span>PATCH STATION</span>
+    <div class="cart__label hero__strip">
+      <span>◆ PATCH STATION</span>
+      <span>เกมย้อนยุค</span>
     </div>
     <div class="hero__body">
       <h1 class="hero__title">เกมไทย</h1>
       <p class="hero__tag">เล่นเกมที่รักในภาษาที่เข้าใจ</p>
+      <a class="credit" href="https://www.facebook.com/maeepaew/" target="_blank" rel="noopener">
+        <span class="credit__mark" aria-hidden="true">f</span>
+        แปลโดยเพจ <strong>แมแปว</strong>
+      </a>
     </div>
   </header>
 
@@ -73,6 +78,24 @@ const inProgress = games.filter((g) => g.status === 'wip');
       )
     }
 
+    <section class="cart">
+      <div class="cart__label" style="background: var(--blue); color: #fff8e8;">
+        <span>◆ เกี่ยวกับทีม</span>
+      </div>
+      <div class="cart__body about">
+        <div class="about__row">
+          <span class="credit__mark about__mark" aria-hidden="true">f</span>
+          <div>
+            <p class="about__name">แมแปว</p>
+            <p class="muted about__sub">เพจแปลเกมย้อนยุคภาษาไทย</p>
+          </div>
+        </div>
+        <a class="btn btn--primary" href="https://www.facebook.com/maeepaew/" target="_blank" rel="noopener">
+          👍 ติดตามเฟซบุ๊ก แมแปว
+        </a>
+      </div>
+    </section>
+
     <p class="build-stamp muted">เว็บชุดนี้ build เมื่อ {__BUILD_TIME__}</p>
 
     <p class="note note--privacy">
@@ -85,79 +108,130 @@ const inProgress = games.filter((g) => g.status === 'wip');
 
 <style>
   .hero {
-    position: relative;
     margin: 18px 0 22px;
-    background: linear-gradient(150deg, var(--clay-wash), var(--amber-wash));
-    overflow: hidden;
   }
 
-  /* วงแหวนเรืองแสงลาง ๆ ด้านหลังหัวเรื่อง ชวนให้นึกถึงแสงไฟตั้งโต๊ะยามเย็น */
-  .hero::before {
-    content: '';
-    position: absolute;
-    top: 46%;
-    left: 50%;
-    width: 280px;
-    height: 280px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    background: radial-gradient(circle, var(--amber) 0%, transparent 68%);
-    opacity: 0.4;
-    filter: blur(18px);
-    pointer-events: none;
-  }
-
-  .hero::after {
-    content: '';
-    position: absolute;
-    top: 46%;
-    left: 50%;
-    width: 210px;
-    height: 210px;
-    transform: translate(-50%, -50%);
-    border-radius: 50%;
-    border: 2px solid var(--amber);
-    opacity: 0.3;
-    pointer-events: none;
+  .hero__strip {
+    background: var(--clay);
+    color: #fff8e8;
+    font-family: var(--font-pixel);
+    font-size: 0.6rem;
+    letter-spacing: 0.02em;
   }
 
   .hero__body {
-    position: relative;
-    z-index: 1;
-    padding: 34px 20px 38px;
+    padding: 30px 20px 34px;
     text-align: center;
-    /* เส้นสแกนจางๆ ให้ความรู้สึกจอ CRT */
-    background-image: repeating-linear-gradient(
-      180deg,
-      rgba(58, 43, 33, 0.045) 0 2px,
-      transparent 2px 5px
-    );
   }
 
   .hero__title {
     font-size: 2.6rem;
-    font-weight: 600;
-    color: var(--clay-deep);
-    letter-spacing: 0.02em;
-    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
+    color: var(--ink);
+    letter-spacing: 0.01em;
+    text-shadow: 3px 3px 0 var(--amber);
   }
 
   .hero__tag {
-    margin: 10px 0 0;
+    margin: 14px 0 0;
     color: var(--ink-soft);
     font-size: 0.95rem;
   }
 
+  .credit {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 14px;
+    padding: 7px 14px 7px 8px;
+    border: 3px solid var(--edge);
+    box-shadow: 3px 3px 0 var(--edge);
+    background: var(--surface);
+    font-size: 0.86rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+    text-decoration: none;
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
+  }
+
+  .credit:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--edge);
+  }
+
+  .credit strong {
+    color: var(--ink);
+  }
+
+  .credit__mark {
+    flex: none;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--blue);
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.85rem;
+    border: 2px solid var(--edge);
+  }
+
   .section-head {
-    font-size: 1.28rem;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1.15rem;
     margin-bottom: 12px;
-    padding-bottom: 7px;
-    border-bottom: 3px dotted var(--edge);
+  }
+
+  .section-head::before {
+    content: '';
+    width: 12px;
+    height: 12px;
+    background: var(--clay);
+    border: 2px solid var(--edge);
+    flex: none;
   }
 
   .announce {
     margin: 0;
     font-size: 0.94rem;
+  }
+
+  .about {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .about__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .about__mark {
+    width: 34px;
+    height: 34px;
+    font-size: 1.2rem;
+  }
+
+  .about__name {
+    margin: 0;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 1.1rem;
+  }
+
+  .about__sub {
+    margin: 2px 0 0;
+  }
+
+  .about .btn {
+    width: auto;
   }
 
   .build-stamp {
