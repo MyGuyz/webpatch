@@ -56,7 +56,7 @@ const inProgress = games.filter((g) => g.status === 'wip');
         ready.length === 0 ? (
           <p class="muted">ยังไม่มีเกมที่พร้อมให้แปะ รอติดตามนะครับ</p>
         ) : (
-          <div class="stack">
+          <div class="games-grid">
             {ready.map((game) => (
               <GameCard game={game} href={`/patch?game=${game.id}`} />
             ))}
@@ -69,7 +69,7 @@ const inProgress = games.filter((g) => g.status === 'wip');
       inProgress.length > 0 && (
         <section>
           <h2 class="section-head">กำลังแปลอยู่</h2>
-          <div class="stack">
+          <div class="games-grid">
             {inProgress.map((game) => (
               <GameCard game={game} />
             ))}
@@ -197,6 +197,20 @@ const inProgress = games.filter((g) => g.status === 'wip');
   .announce {
     margin: 0;
     font-size: 0.94rem;
+  }
+
+  .games-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  @media (min-width: 700px) {
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
   }
 
   .about {

@@ -342,6 +342,73 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
   line-height: 1;
 }
 
+/* ── เมนูบน (จอกว้าง) ─────────────────────────────────────── */
+
+.top-nav {
+  display: none;
+}
+
+.top-nav__inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  background: var(--surface);
+  border-bottom: 3px solid var(--edge);
+}
+
+.top-nav__brand {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 1.35rem;
+  color: var(--ink);
+  text-decoration: none;
+  text-shadow: 2px 2px 0 var(--amber);
+}
+
+.top-nav__links {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.top-nav__link {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid transparent;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+  text-decoration: none;
+}
+
+.top-nav__link[aria-current='page'] {
+  color: var(--ink);
+  background: var(--amber);
+  border-color: var(--edge);
+}
+
+@media (min-width: 720px) {
+  .nav {
+    display: none;
+  }
+
+  .top-nav {
+    display: block;
+  }
+
+  body {
+    padding-bottom: 0;
+  }
+}
+
 /* ── กล่อง log ─────────────────────────────────────────────── */
 
 .log {
@@ -546,6 +613,12 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
 .help-btn:active {
   transform: translate(4px, 4px);
   box-shadow: 0 0 0 var(--edge);
+}
+
+@media (min-width: 720px) {
+  .help-btn {
+    bottom: 16px;
+  }
 }
 
 /* ── กล่องข้อความอธิบายผล (msgbox) — ใช้แทน log ดิบๆ ตอนมีเรื่องต้องอธิบาย ── */
