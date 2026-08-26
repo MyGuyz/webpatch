@@ -99,6 +99,26 @@ export async function getVersionsByGame(games) {
   return Object.fromEntries(Object.entries(byGame).map(([id, set]) => [id, [...set]]));
 }
 
+/** ประวัติการอัปเดตต่อเกม (ใหม่สุดก่อน) — โชว์ให้คนที่แปะไปแล้วรู้ว่าเวอร์ชันใหม่แก้อะไรบ้าง */
+export async function getChangelogsByGame(games) {
+  const ids = games.map((g) => g.id);
+  const byGame = Object.fromEntries(games.map((g) => [g.id, []]));
+
+  const supabase = getClient();
+  if (supabase && ids.length > 0) {
+    const { data, error } = await supabase
+      .from('changelogs')
+      .select('game_id, version, body, released_at')
+      .in('game_id', ids)
+      .order('released_at', { ascending: false });
+
+    if (error) throw new Error(`อ่านประวัติการอัปเดตไม่สำเร็จ: ${error.message}`);
+    for (const row of data ?? []) byGame[row.game_id]?.push(row);
+  }
+
+  return byGame;
+}
+
 export async function getGameById(id) {
   const games = await getPublishedGames();
   return games.find((game) => String(game.id) === String(id)) ?? null;

@@ -162,6 +162,32 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     </div>
   </form>
 
+  <section class="cart" id="changelog-section" hidden>
+    <div class="cart__label"><span>ประวัติการอัปเดต</span></div>
+    <div class="cart__body">
+      <div id="changelog-list" class="stack"></div>
+
+      <form id="changelog-form" class="changelog-form">
+        <div class="row">
+          <label class="field">
+            <span class="field__label">เวอร์ชัน *</span>
+            <input type="text" name="version" placeholder="V1.1" required />
+          </label>
+          <label class="field">
+            <span class="field__label">วันที่ปล่อย</span>
+            <input type="date" name="released_at" />
+          </label>
+        </div>
+        <label class="field">
+          <span class="field__label">แก้อะไรบ้าง *</span>
+          <textarea name="body" rows="2" placeholder="แก้บทสนทนาบทที่ 3 ที่ตกกรอบ" required></textarea>
+        </label>
+        <p class="msg" id="changelog-msg" hidden></p>
+        <button class="btn btn--ghost" type="submit">+ เพิ่มรายการ</button>
+      </form>
+    </div>
+  </section>
+
   <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
     window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
   </script>
@@ -254,5 +280,37 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     display: flex;
     gap: 12px;
     margin: 20px 0 28px;
+  }
+
+  .changelog-form {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 2px dotted var(--edge);
+  }
+
+  .changelog-entry {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 10px 12px;
+    background: var(--surface-sunken);
+    border-radius: var(--radius-sm);
+  }
+
+  .changelog-entry__head {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+
+  .changelog-entry__body {
+    margin: 0;
+    font-size: 0.88rem;
+    white-space: pre-line;
+  }
+
+  .changelog-entry button {
+    flex: none;
   }
 </style>

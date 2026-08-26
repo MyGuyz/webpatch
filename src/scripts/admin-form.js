@@ -6,6 +6,11 @@ const msg = document.getElementById('msg');
 const saveBtn = document.getElementById('save');
 const pageHead = document.getElementById('page-head');
 
+const changelogSection = document.getElementById('changelog-section');
+const changelogList = document.getElementById('changelog-list');
+const changelogForm = document.getElementById('changelog-form');
+const changelogMsg = document.getElementById('changelog-msg');
+
 const gameId = new URLSearchParams(location.search).get('id');
 const supabase = getSupabase();
 
@@ -27,6 +32,8 @@ async function start() {
     pageHead.textContent = 'แก้ข้อมูลเกม';
     const loaded = await loadGame();
     if (!loaded) return;
+    changelogSection.hidden = false;
+    await loadChangelogs();
   }
 
   form.hidden = false;
@@ -86,6 +93,88 @@ form.addEventListener('submit', async (event) => {
   }
 
   location.href = '/admin';
+});
+
+// ── ประวัติการอัปเดต ──────────────────────────────────────
+
+async function loadChangelogs() {
+  const { data, error } = await supabase
+    .from('changelogs')
+    .select('id, version, body, released_at')
+    .eq('game_id', gameId)
+    .order('released_at', { ascending: false });
+
+  if (error) {
+    showMessage(changelogMsg, `โหลดประวัติไม่สำเร็จ: ${error.message}`);
+    return;
+  }
+
+  changelogList.innerHTML = '';
+  if (!data || data.length === 0) {
+    changelogList.innerHTML = '<p class="muted">ยังไม่มีประวัติการอัปเดต</p>';
+    return;
+  }
+
+  for (const entry of data) {
+    const row = document.createElement('div');
+    row.className = 'changelog-entry';
+
+    const text = document.createElement('div');
+    const head = document.createElement('p');
+    head.className = 'changelog-entry__head';
+    head.textContent = entry.released_at ? `${entry.version} · ${entry.released_at}` : entry.version;
+    const body = document.createElement('p');
+    body.className = 'changelog-entry__body';
+    body.textContent = entry.body;
+    text.append(head, body);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'btn btn--ghost btn--small btn--danger';
+    deleteBtn.textContent = 'ลบ';
+    deleteBtn.addEventListener('click', () => deleteChangelog(entry.id));
+
+    row.append(text, deleteBtn);
+    changelogList.appendChild(row);
+  }
+}
+
+async function deleteChangelog(id) {
+  if (!confirm('ลบรายการนี้ทิ้ง?')) return;
+
+  const { error } = await supabase.from('changelogs').delete().eq('id', id);
+  if (error) {
+    showMessage(changelogMsg, `ลบไม่สำเร็จ: ${error.message}`);
+    return;
+  }
+  await loadChangelogs();
+}
+
+changelogForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  hideMessage(changelogMsg);
+
+  const values = Object.fromEntries(new FormData(changelogForm));
+  const payload = {
+    game_id: Number(gameId),
+    version: values.version.trim(),
+    body: values.body.trim(),
+  };
+  if (values.released_at) payload.released_at = values.released_at;
+
+  if (!payload.version || !payload.body) {
+    showMessage(changelogMsg, 'ต้องกรอกเวอร์ชันและรายละเอียด');
+    return;
+  }
+
+  const { error } = await supabase.from('changelogs').insert(payload);
+  if (error) {
+    showMessage(changelogMsg, `เพิ่มไม่สำเร็จ: ${error.message}`);
+    return;
+  }
+
+  changelogForm.reset();
+  await loadChangelogs();
 });
 
 function clearFieldErrors() {

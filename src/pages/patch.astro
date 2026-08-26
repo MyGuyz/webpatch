@@ -1,9 +1,16 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getReadyGames, getConsoles, STATUS_LABELS, isUsingSeedData } from '../lib/games.js';
+import {
+  getReadyGames,
+  getConsoles,
+  getChangelogsByGame,
+  STATUS_LABELS,
+  isUsingSeedData,
+} from '../lib/games.js';
 
 const games = await getReadyGames();
 const consoles = await getConsoles();
+const changelogsByGame = await getChangelogsByGame(games);
 const usingSeed = isUsingSeedData();
 
 const preselectedId = Astro.url.searchParams.get('game');
@@ -76,6 +83,11 @@ const consolesWithGames = consoles.filter((c) =>
               <span class="field__label">ไฟล์เกมต้นฉบับที่ต้องใช้</span>
               <p class="mono" id="info-spec"></p>
             </div>
+
+            <details class="changelog" id="info-changelog" hidden>
+              <summary>ประวัติการอัปเดต</summary>
+              <div id="info-changelog-list"></div>
+            </details>
           </div>
         </section>
 
@@ -108,7 +120,15 @@ const consolesWithGames = consoles.filter((c) =>
     )
   }
 
-  <script is:inline define:vars={{ gamesJson: JSON.stringify(games), preselectedId }}>
+  <script
+    is:inline
+    define:vars={{
+      gamesJson: JSON.stringify(
+        games.map((g) => ({ ...g, changelog: changelogsByGame[g.id] ?? [] }))
+      ),
+      preselectedId,
+    }}
+  >
     window.__GAMES__ = JSON.parse(gamesJson);
     window.__PRESELECT__ = preselectedId;
   </script>
@@ -143,6 +163,38 @@ const consolesWithGames = consoles.filter((c) =>
 
   .spec p {
     margin: 4px 0 0;
+  }
+
+  .changelog {
+    margin-top: 14px;
+  }
+
+  .changelog summary {
+    cursor: pointer;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  .changelog-entry {
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--edge);
+  }
+
+  .changelog-entry:first-child {
+    margin-top: 12px;
+  }
+
+  .changelog-entry__head {
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+  .changelog-entry__body {
+    margin: 4px 0 0;
+    font-size: 0.88rem;
+    white-space: pre-line;
   }
 
   input[type='file'] {

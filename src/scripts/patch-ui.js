@@ -88,6 +88,8 @@ function showGame(game) {
 
   el('info-spec').textContent = game.source_spec ?? 'ไม่ได้ระบุ';
 
+  renderChangelog(game.changelog ?? []);
+
   gameInfo.hidden = false;
   stepFile.hidden = false;
   stepRun.hidden = false;
@@ -95,6 +97,35 @@ function showGame(game) {
   clearLog();
   log(`เลือกเกม ${game.title} แล้ว`);
   log('รอเลือกไฟล์เกมต้นฉบับของคุณ');
+}
+
+function renderChangelog(entries) {
+  const box = el('info-changelog');
+  const list = el('info-changelog-list');
+
+  if (entries.length === 0) {
+    box.hidden = true;
+    return;
+  }
+
+  list.innerHTML = '';
+  for (const entry of entries) {
+    const item = document.createElement('div');
+    item.className = 'changelog-entry';
+
+    const head = document.createElement('p');
+    head.className = 'changelog-entry__head';
+    head.textContent = entry.released_at ? `${entry.version} · ${entry.released_at}` : entry.version;
+
+    const body = document.createElement('p');
+    body.className = 'changelog-entry__body';
+    body.textContent = entry.body;
+
+    item.append(head, body);
+    list.appendChild(item);
+  }
+
+  box.hidden = false;
 }
 
 function resetFileState() {
