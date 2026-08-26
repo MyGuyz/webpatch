@@ -1,4 +1,5 @@
 ---
+import PixelIcon from './PixelIcon.astro';
 import { STATUS_LABELS } from '../lib/games.js';
 
 interface Props {
@@ -8,6 +9,12 @@ interface Props {
 
 const { game, href } = Astro.props;
 const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
+
+// รายละเอียดภาษาไทยแยกออกมาอีกบรรทัด เพราะบรรทัดเวอร์ชันด้านบนใช้ฟอนต์พิกเซลที่ไม่มีอักษรไทย
+const details = [
+  game.patch_updated_at && `อัปเดต ${game.patch_updated_at}`,
+  game.download_count && `📥 แปะไปแล้ว ${game.download_count.toLocaleString('th-TH')} ครั้ง`,
+].filter(Boolean);
 ---
 
 <article class="cart game">
@@ -17,38 +24,32 @@ const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
   </div>
 
   <div class="cart__body">
-    {
-      game.cover_url && (
-        <img class="game__cover" src={game.cover_url} alt={`ปกเกม ${game.title}`} loading="lazy" />
-      )
-    }
+    <div class="game__cover">
+      {
+        game.cover_url ? (
+          <img src={game.cover_url} alt={`ปกเกม ${game.title}`} loading="lazy" />
+        ) : (
+          <PixelIcon name="patch" class="game__cover-art" />
+        )
+      }
+    </div>
 
     <h3 class="game__title">{game.title}</h3>
     {game.subtitle && <p class="muted game__subtitle">{game.subtitle}</p>}
     {game.description && <p class="game__desc">{game.description}</p>}
 
-    {
-      game.patch_version && (
-        <p class="muted">
-          แพตช์ <strong>{game.patch_version}</strong>
-          {game.patch_updated_at && <> · อัปเดต {game.patch_updated_at}</>}
-          {Boolean(game.download_count) && <> · 📥 แปะไปแล้ว {game.download_count.toLocaleString('th-TH')} ครั้ง</>}
-        </p>
-      )
-    }
+    {game.patch_version && <p class="game__meta">PATCH {game.patch_version}</p>}
+    {details.length > 0 && <p class="muted game__details">{details.join(' · ')}</p>}
 
     <div class="game__spacer" />
 
-    <div class="game__actions">
-      {href && <a class="btn btn--primary" href={href}>ไปแปะแพตช์</a>}
-      {
-        game.cover_url && (
-          <a class="btn btn--ghost btn--small" href={game.cover_url} download target="_blank" rel="noopener">
-            ⬇ ภาพปก
-          </a>
-        )
-      }
-    </div>
+    {
+      href && (
+        <a class="game__go" href={href}>
+          ไปแปะแพตช์ →
+        </a>
+      )
+    }
   </div>
 </article>
 
@@ -65,16 +66,36 @@ const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
     flex-direction: column;
   }
 
+  /* กรอบปกเกมมีเสมอ ถ้ายังไม่มีรูปก็โชว์ภาพพิกเซลตลับเกมแทน
+     การ์ดทุกใบจะได้สูงเท่ากันและหน้าตาไม่แหว่งเวลาเกมไหนยังไม่ได้ใส่ปก */
   .game__cover {
-    display: block;
-    width: 100%;
-    border-radius: var(--radius-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 16 / 9;
     border: 2px solid var(--edge);
-    margin-bottom: 14px;
+    background: var(--surface-sunken);
+    margin-bottom: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .game__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+
+  .game__cover :global(.game__cover-art) {
+    width: 30%;
+    max-width: 64px;
+    image-rendering: pixelated;
   }
 
   .game__title {
-    font-size: 1.15rem;
+    font-size: 1.1rem;
+    margin: 0;
   }
 
   .game__subtitle {
@@ -82,25 +103,49 @@ const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
   }
 
   .game__desc {
-    margin: 10px 0;
+    margin: 10px 0 0;
     font-size: 0.92rem;
+  }
+
+  .game__meta {
+    margin: 10px 0 0;
+    font-family: var(--font-pixel);
+    font-size: 0.68rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+
+  .game__details {
+    margin: 6px 0 0;
   }
 
   /* ดันปุ่มลงล่างสุดของการ์ดเสมอ ไม่ว่าข้อความด้านบนจะยาวแค่ไหน
      กันปุ่มขยับตำแหน่งไม่ตรงกันเวลาการ์ดหลายใบเรียงแถวเดียวกันในจอกว้าง */
   .game__spacer {
     flex: 1;
+    min-height: 14px;
   }
 
-  .game__actions {
+  .game__go {
     display: flex;
+    align-items: center;
+    justify-content: center;
     gap: 8px;
-    margin-top: 14px;
-    flex-wrap: wrap;
+    width: 100%;
+    padding: 11px;
+    border: 2px solid var(--edge);
+    box-shadow: 3px 3px 0 var(--edge);
+    background: var(--blue);
+    color: #fff;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    transition: transform 0.05s ease, box-shadow 0.05s ease;
   }
 
-  .game__actions .btn--primary {
-    flex: 1;
-    min-width: 140px;
+  .game__go:active {
+    transform: translate(3px, 3px);
+    box-shadow: 0 0 0 var(--edge);
   }
 </style>

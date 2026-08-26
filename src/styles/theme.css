@@ -131,17 +131,18 @@ a {
 
 /* ── ป้ายสถานะ ───────────────────────────────────────────── */
 
+/* ป้ายทั้งหมดใช้ฟอนต์พิกเซล ข้อความจึงต้องเป็นอังกฤษ/ตัวเลขเท่านั้น
+   (Press Start 2P ไม่มีสระ-วรรณยุกต์ไทย ถ้าใส่ไทยจะตกไปใช้ฟอนต์สำรองแล้วหลุดธีม) */
 .tag {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  padding: 3px 9px;
+  padding: 4px 8px;
   border: 2px solid var(--edge);
   border-radius: 0;
-  font-family: var(--font-display);
-  font-weight: 700;
-  font-size: 0.72rem;
-  letter-spacing: 0.02em;
+  font-family: var(--font-pixel);
+  font-size: 0.58rem;
+  line-height: 1.5;
   white-space: nowrap;
 }
 
@@ -150,9 +151,7 @@ a {
 .tag--wip { background: var(--clay); color: #fff8e8; }
 .tag--console {
   background: var(--surface);
-  color: var(--ink-soft);
-  font-family: var(--font-mono);
-  letter-spacing: 0.02em;
+  color: var(--ink);
 }
 
 /* ── ปุ่ม ─────────────────────────────────────────────────── */
@@ -453,8 +452,8 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
 
 .stage__no {
   flex: none;
-  width: 40px;
-  height: 38px;
+  width: 56px;
+  height: 42px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -462,8 +461,9 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
   background: var(--amber);
   color: var(--ink);
   font-family: var(--font-pixel);
-  font-size: 1.1rem;
+  font-size: 9px;
   text-align: center;
+  line-height: 1.3;
 }
 
 .stage__body h4 {

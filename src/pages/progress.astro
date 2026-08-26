@@ -21,7 +21,7 @@ const inProgress = games.filter((g) => g.status === 'wip');
         {inProgress.map((game) => (
           <article class="cart">
             <div class="cart__label">
-              <span class="tag tag--wip">ขั้น {game.progress_stage}/5</span>
+              <span class="tag tag--wip">STAGE {game.progress_stage}/5</span>
               <span class="tag tag--console">{game.console?.name ?? '—'}</span>
             </div>
             <div class="cart__body">

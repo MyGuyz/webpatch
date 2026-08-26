@@ -26,6 +26,9 @@ const inProgress = games.filter((g) => g.status === 'wip');
           <span class="credit__mark" aria-hidden="true">f</span>
           แปลโดยเพจ <strong>แมแปว</strong>
         </a>
+        <div class="hero__bar" aria-hidden="true"><span></span></div>
+        <span class="hero__prompt" aria-hidden="true">▶ PRESS START</span>
+        <a class="btn btn--primary hero__cta" href="/patch">🕹️ เลือกเกมแล้วแปะแพตช์เลย</a>
       </div>
       <PixelIcon name="patch" class="hero__art" />
     </div>
@@ -51,8 +54,6 @@ const inProgress = games.filter((g) => g.status === 'wip');
         </section>
       )
     }
-
-    <a class="btn btn--primary" href="/patch">🎮 เลือกเกมแล้วแปะแพตช์เลย</a>
 
     <section>
       <h2 class="section-head">ผลงานล่าสุด</h2>
@@ -119,7 +120,8 @@ const inProgress = games.filter((g) => g.status === 'wip');
     background: var(--clay);
     color: #fff8e8;
     font-family: var(--font-pixel);
-    font-size: 0.6rem;
+    font-size: 8.5px;
+    line-height: 1.4;
     letter-spacing: 0.02em;
   }
 
@@ -161,6 +163,51 @@ const inProgress = games.filter((g) => g.status === 'wip');
     margin: 14px 0 0;
     color: var(--ink-soft);
     font-size: 0.95rem;
+  }
+
+  /* แถบพลังงาน + ข้อความกระพริบ ให้ความรู้สึกหน้าจอ title screen ของเกมยุคเก่า */
+  .hero__bar {
+    margin: 18px auto 0;
+    width: 180px;
+    height: 12px;
+    border: 2px solid var(--edge);
+    background: var(--surface);
+    padding: 2px;
+  }
+
+  .hero__bar span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    background: repeating-linear-gradient(90deg, var(--teal) 0 6px, var(--teal-deep) 6px 7px);
+  }
+
+  .hero__prompt {
+    display: block;
+    margin-top: 8px;
+    font-family: var(--font-pixel);
+    font-size: 8px;
+    color: var(--ink-soft);
+    animation: blink 1.1s steps(1) infinite;
+  }
+
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  /* ปุ่ม .btn ปกติกว้างเต็มบรรทัด แต่ปุ่มในหน้า title ต้องหดพอดีข้อความและอยู่กลาง */
+  .hero__cta {
+    display: inline-flex;
+    width: auto;
+    margin-top: 18px;
+  }
+
+  @media (min-width: 720px) {
+    .hero__bar {
+      margin-left: 0;
+    }
   }
 
   .credit {

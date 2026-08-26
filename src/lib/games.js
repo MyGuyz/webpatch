@@ -153,11 +153,16 @@ export async function getActiveAnnouncement() {
   return data;
 }
 
-/** ป้ายสถานะที่ผู้ใช้เห็น — เก็บไว้ที่เดียวเพื่อไม่ให้แต่ละหน้าเขียนคำไม่ตรงกัน */
+/**
+ * ป้ายสถานะที่ผู้ใช้เห็น — เก็บไว้ที่เดียวเพื่อไม่ให้แต่ละหน้าเขียนคำไม่ตรงกัน
+ *
+ * ใช้คำอังกฤษสั้นๆ เพราะป้ายพวกนี้แสดงด้วยฟอนต์พิกเซล Press Start 2P
+ * ซึ่งไม่มีสระและวรรณยุกต์ไทย ใส่ไทยแล้วจะตกไปใช้ฟอนต์สำรองจนหลุดธีม
+ */
 export const STATUS_LABELS = {
-  ready: { text: 'พร้อมให้ Patch', className: 'tag--ready' },
-  beta: { text: 'BETA', className: 'tag--beta' },
-  wip: { text: 'กำลังทำอยู่', className: 'tag--wip' },
+  ready: { text: '★ READY', className: 'tag--ready' },
+  beta: { text: '★ BETA', className: 'tag--beta' },
+  wip: { text: 'WIP', className: 'tag--wip' },
 };
 
 export const PROGRESS_STAGES = [

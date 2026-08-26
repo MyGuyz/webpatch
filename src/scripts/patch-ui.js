@@ -79,7 +79,7 @@ function showGame(game) {
 
   const isBeta = game.status === 'beta';
   el('info-status').className = `tag ${isBeta ? 'tag--beta' : 'tag--ready'}`;
-  el('info-status').textContent = isBeta ? 'BETA' : 'พร้อมให้ Patch';
+  el('info-status').textContent = isBeta ? '★ BETA' : '★ READY';
   el('info-console').textContent = game.console?.name ?? '—';
   el('info-title').textContent = game.title;
   el('info-desc').textContent = game.description ?? '';
