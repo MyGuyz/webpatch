@@ -1,9 +1,13 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getPublishedGames, PROGRESS_STAGES } from '../lib/games.js';
+import { getPublishedGames, PROGRESS_STAGES, isUsingSeedData } from '../lib/games.js';
 
 const games = await getPublishedGames();
 const inProgress = games.filter((g) => g.status === 'wip');
+const usingSeed = isUsingSeedData();
+
+const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
+const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 ---
 
 <Base title="กำลังทำอยู่ — เกมไทย" description="ดูความคืบหน้าของเกมที่กำลังแปลอยู่">
@@ -39,6 +43,50 @@ const inProgress = games.filter((g) => g.status === 'wip');
       </div>
     )
   }
+
+  <section class="requests">
+    <h2 class="page-head requests__head">อยากให้แปลเกมไหนต่อ?</h2>
+    <p class="muted lead">โหวตเกมที่อยากให้ทำ หรือแนะนำเกมใหม่ที่ยังไม่มีในลิสต์ได้เลย</p>
+
+    {
+      usingSeed && (
+        <p class="note">
+          <strong>ยังไม่ได้เชื่อม Supabase</strong> — โหวต/แนะนำเกมยังใช้ไม่ได้ในโหมดตัวอย่าง
+        </p>
+      )
+    }
+
+    <p class="msg" id="requests-msg" hidden></p>
+    <div id="requests-list" class="stack"></div>
+
+    {
+      !usingSeed && (
+        <form id="suggest-form" class="cart">
+          <div class="cart__label"><span>แนะนำเกมใหม่</span></div>
+          <div class="cart__body">
+            <label class="field">
+              <span class="field__label">ชื่อเกม *</span>
+              <input type="text" name="title" placeholder="เช่น Suikoden II" required />
+            </label>
+            <label class="field">
+              <span class="field__label">หมายเหตุ (ถ้ามี)</span>
+              <input type="text" name="note" placeholder="เครื่องอะไร ทำไมอยากให้ทำ ฯลฯ" />
+            </label>
+            <label class="field field--trap" aria-hidden="true">
+              <span class="field__label">เว้นว่างไว้</span>
+              <input type="text" name="note_extra" tabindex="-1" autocomplete="off" />
+            </label>
+            <button class="btn btn--primary" type="submit" id="suggest-btn">+ แนะนำเกมนี้</button>
+          </div>
+        </form>
+      )
+    }
+  </section>
+
+  <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
+    window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
+  </script>
+  <script src="../scripts/progress-ui.js"></script>
 </Base>
 
 <style>
@@ -57,4 +105,79 @@ const inProgress = games.filter((g) => g.status === 'wip');
   }
   .bar__fill { height: 100%; background: var(--clay); }
   .percent { margin: 6px 0 0; }
+
+  .requests { margin-top: 34px; }
+  .requests__head { margin: 0 0 8px; }
+
+  .request-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 14px;
+  }
+
+  .request-row__title { font-size: 1.02rem; margin: 0; }
+  .request-row__note { margin: 4px 0 0; }
+
+  .vote-btn {
+    flex: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    width: 60px;
+    padding: 8px 0;
+    border: 2px solid var(--edge);
+    border-radius: var(--radius-sm);
+    background: var(--surface-sunken);
+    color: var(--ink);
+    font-family: inherit;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .vote-btn:active:not(:disabled) {
+    transform: translateY(1px);
+  }
+
+  .vote-btn:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .vote-btn__count {
+    font-size: 1.1rem;
+  }
+
+  .vote-btn__label {
+    font-size: 0.68rem;
+    color: var(--ink-soft);
+  }
+
+  #suggest-form {
+    margin-top: 16px;
+  }
+
+  .field--trap {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+    margin: 0;
+    padding: 0;
+  }
+
+  .msg {
+    padding: 11px 14px;
+    border-radius: var(--radius-sm);
+    border-left: 4px solid var(--clay);
+    background: var(--clay-wash);
+    font-size: 0.9rem;
+    margin: 0 0 14px;
+  }
+
+  .msg[data-kind='ok'] {
+    border-left-color: var(--teal);
+    background: var(--teal-wash);
+  }
 </style>
