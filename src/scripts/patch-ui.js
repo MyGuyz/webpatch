@@ -1,5 +1,6 @@
 import { applyPatch } from '../patcher/index.js';
 import { sha1Hex } from '../patcher/sha1.js';
+import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError } from '../lib/sfx.js';
 
 const games = window.__GAMES__ ?? [];
 const preselectId = window.__PRESELECT__;
@@ -64,6 +65,8 @@ function fillGameOptions() {
 function showGame(game) {
   selectedGame = game;
   resetFileState();
+
+  if (game) sfxSelect();
 
   if (!game) {
     gameInfo.hidden = true;
@@ -177,6 +180,7 @@ async function handleFileChosen() {
     const actual = await sha1Hex(sourceBytes);
 
     if (actual.toLowerCase() !== selectedGame.source_sha1.toLowerCase()) {
+      sfxError();
       log('ไฟล์นี้ไม่ตรงรุ่นที่แพตช์รองรับ', 'error');
       log(`ที่ต้องการ: ${selectedGame.source_sha1}`, 'error');
       log(`ไฟล์ของคุณ: ${actual}`, 'error');
@@ -190,6 +194,7 @@ async function handleFileChosen() {
   }
 
   applyBtn.disabled = false;
+  sfxConfirm();
   log('พร้อมแปะแล้ว กดปุ่มด้านบนได้เลย', 'ok');
 }
 
@@ -226,8 +231,10 @@ async function runPatch() {
     downloadBtn.dataset.filename = thaiFileName(sourceName);
     shareBtn.hidden = false;
 
+    sfxSuccess();
     log('แปะเสร็จแล้ว! กดปุ่มดาวน์โหลดด้านล่างได้เลย', 'ok');
   } catch (error) {
+    sfxError();
     log(error.message, 'error');
     log('ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ', 'error');
   } finally {
@@ -238,6 +245,7 @@ async function runPatch() {
 
 function downloadResult() {
   if (!resultUrl) return;
+  sfxTick();
   const link = document.createElement('a');
   link.href = resultUrl;
   link.download = downloadBtn.dataset.filename ?? 'patched.bin';
@@ -246,6 +254,7 @@ function downloadResult() {
 
 async function shareGame() {
   if (!selectedGame) return;
+  sfxTick();
 
   const url = `${location.origin}/patch?game=${selectedGame.id}`;
   const text = `แปะแพตช์ภาษาไทย ${selectedGame.title} ได้แล้วที่นี่`;

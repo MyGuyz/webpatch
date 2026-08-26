@@ -39,11 +39,124 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
       <slot />
     </main>
     <BottomNav />
+
+    <button class="help-btn" id="help-btn" aria-label="เปิดคู่มือมือใหม่">?</button>
+
+    <div class="overlay" id="browser-gate">
+      <div class="cart overlay__card">
+        <div class="cart__label" style="background: var(--clay); color: #fff8e8;">
+          <span>⚠ SYSTEM CHECK</span>
+        </div>
+        <div class="cart__body" style="text-align: center;">
+          <div style="font-size: 2.3rem; line-height: 1; margin-bottom: 8px;">📵</div>
+          <h3 style="margin: 0 0 6px;">เบราว์เซอร์นี้แปะแพตช์ไม่ได้ครับ</h3>
+          <p style="margin: 0 0 4px;">
+            ตรวจพบว่าเปิดจากแอป <strong id="gate-appname">—</strong>
+          </p>
+          <p class="muted" style="margin: 0 0 18px;">
+            เบราว์เซอร์ในแอปแบบนี้มักปิดกั้นการดาวน์โหลดไฟล์ แปะแพตช์เสร็จแล้วจะโหลดไฟล์กลับไม่ได้
+            ต้องเปิดด้วยเบราว์เซอร์จริง (Chrome/Safari) ก่อนครับ
+          </p>
+
+          <div class="tab-row">
+            <button class="btn btn--small" id="tab-ios" type="button">🍏 iPhone</button>
+            <button class="btn btn--small" id="tab-android" type="button">🤖 Android</button>
+          </div>
+
+          <div id="steps-ios" style="text-align: left;">
+            <div class="stage">
+              <div class="stage__no">STAGE<br />1</div>
+              <div class="stage__body"><h4>แตะปุ่ม "•••"</h4><p>ปกติอยู่มุมขวาล่าง หรือขวาบนของจอ</p></div>
+            </div>
+            <div class="stage">
+              <div class="stage__no">STAGE<br />2</div>
+              <div class="stage__body"><h4>เลือก "เปิดใน Safari"</h4><p>(Open in Safari) อยู่ในเมนูที่เด้งขึ้นมา</p></div>
+            </div>
+            <div class="stage">
+              <div class="stage__no">STAGE<br />3</div>
+              <div class="stage__body"><h4>เสร็จแล้ว!</h4><p>Safari จะเปิดหน้านี้ขึ้นมาใหม่ ใช้งานได้ปกติเลย</p></div>
+            </div>
+          </div>
+
+          <div id="steps-android" style="text-align: left;" hidden>
+            <div class="stage">
+              <div class="stage__no">STAGE<br />1</div>
+              <div class="stage__body"><h4>แตะปุ่ม "⋮"</h4><p>จุดสามจุดแนวตั้ง มุมขวาบนของจอ</p></div>
+            </div>
+            <div class="stage">
+              <div class="stage__no">STAGE<br />2</div>
+              <div class="stage__body"><h4>เลือก "เปิดใน Chrome"</h4><p>หรือ "เปิดในเบราว์เซอร์" แล้วแต่แอปที่เปิดอยู่</p></div>
+            </div>
+            <div class="stage">
+              <div class="stage__no">STAGE<br />3</div>
+              <div class="stage__body"><h4>เสร็จแล้ว!</h4><p>Chrome จะเปิดหน้านี้ขึ้นมาใหม่ ใช้งานได้ปกติเลย</p></div>
+            </div>
+          </div>
+
+          <div class="note" style="margin: 18px 0 0; text-align: left;">
+            <p style="margin: 0 0 8px; font-weight: 600;">🔗 หาปุ่มไม่เจอ?</p>
+            <p style="margin: 0;">คัดลอกลิงก์นี้ แล้วไปวางในแอป Chrome หรือ Safari ด้วยตัวเองก็ได้ครับ</p>
+            <div class="copybox">
+              <input id="copy-url" readonly value="" />
+              <button class="btn btn--small" id="copy-btn" type="button">📋 คัดลอก</button>
+            </div>
+          </div>
+
+          <button class="skip-link" id="gate-skip" type="button">
+            ยังไงก็ลองเปิดในนี้ก่อน (ไม่แนะนำ) →
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="overlay" id="guide-modal">
+      <div class="cart overlay__card">
+        <div class="cart__label">
+          <span>◆ คู่มือมือใหม่</span>
+          <button class="close-x" id="guide-close" type="button" aria-label="ปิดคู่มือ">X</button>
+        </div>
+        <div class="cart__body">
+          <h3 style="margin: 0 0 4px;">แปะแพตช์ยังไง?</h3>
+          <p class="muted" style="margin: 0 0 18px;">ทำตาม 3 ขั้นตอนนี้ ใช้เวลาไม่ถึง 2 นาที</p>
+
+          <div class="stage">
+            <div class="stage__no">STAGE<br />1</div>
+            <div class="stage__body">
+              <h4>เลือกเกม</h4>
+              <p>กด "แปะแพตช์" แล้วเลือกเกมที่คุณมีไฟล์ต้นฉบับอยู่แล้ว</p>
+            </div>
+          </div>
+
+          <div class="stage">
+            <div class="stage__no">STAGE<br />2</div>
+            <div class="stage__body">
+              <h4>ใส่ไฟล์เกมของคุณ</h4>
+              <p>ไฟล์ ROM จะอยู่ในเครื่องคุณตลอด ไม่ถูกส่งขึ้นเซิร์ฟเวอร์ไหนทั้งนั้น</p>
+            </div>
+          </div>
+
+          <div class="stage">
+            <div class="stage__no">STAGE<br />3</div>
+            <div class="stage__body">
+              <h4>กดแปะแพตช์</h4>
+              <p>รอสักครู่ แล้วดาวน์โหลดไฟล์เกมภาษาไทยไปเล่นได้เลย</p>
+            </div>
+          </div>
+
+          <button class="btn btn--primary" id="guide-done" type="button" style="margin-top: 4px;">
+            เข้าใจแล้ว เริ่มเล่นเลย →
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script>
       // ลงทะเบียนไว้เฉพาะให้กด "ติดตั้งเป็นแอป" ได้ ไม่ได้ใช้แคชอะไร (ดู public/sw.js)
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js');
       }
     </script>
+    <script src="../scripts/browser-gate.js"></script>
+    <script src="../scripts/guide.js"></script>
   </body>
 </html>

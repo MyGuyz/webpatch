@@ -1,6 +1,7 @@
 import { getSupabase, showMessage, hideMessage } from '../lib/admin-client.js';
 import { buildBugReportPayload, explainBugReportError, formatSize } from '../lib/bug-report-form.js';
 import { compressImageIfNeeded } from '../lib/compress-image.js';
+import { sfxSuccess, sfxError, sfxWarn } from '../lib/sfx.js';
 
 const games = window.__GAMES__ ?? [];
 
@@ -91,6 +92,7 @@ function start() {
 
     const result = buildBugReportPayload(values, files);
     if (!result.ok) {
+      sfxWarn();
       showFieldErrors(result.errors);
       showMessage(msg, 'ยังกรอกไม่ครบ — ดูข้อความสีแดงใต้ช่องที่มีปัญหา');
       return;
@@ -121,8 +123,10 @@ function start() {
       form.reset();
       mediaSummary.textContent = '';
       fillGameOptions();
+      sfxSuccess();
       showMessage(msg, 'ส่งรายงานแล้ว ขอบคุณที่ช่วยแจ้งครับ 🙏', 'ok');
     } catch (error) {
+      sfxError();
       showMessage(msg, explainBugReportError(error));
     } finally {
       submitBtn.disabled = false;
