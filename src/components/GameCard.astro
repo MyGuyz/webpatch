@@ -37,6 +37,8 @@ const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
       )
     }
 
+    <div class="game__spacer" />
+
     <div class="game__actions">
       {href && <a class="btn btn--primary" href={href}>ไปแปะแพตช์</a>}
       {
@@ -51,6 +53,18 @@ const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
 </article>
 
 <style>
+  .game {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  .cart__body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+  }
+
   .game__cover {
     display: block;
     width: 100%;
@@ -70,6 +84,12 @@ const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
   .game__desc {
     margin: 10px 0;
     font-size: 0.92rem;
+  }
+
+  /* ดันปุ่มลงล่างสุดของการ์ดเสมอ ไม่ว่าข้อความด้านบนจะยาวแค่ไหน
+     กันปุ่มขยับตำแหน่งไม่ตรงกันเวลาการ์ดหลายใบเรียงแถวเดียวกันในจอกว้าง */
+  .game__spacer {
+    flex: 1;
   }
 
   .game__actions {
