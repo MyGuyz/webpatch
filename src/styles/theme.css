@@ -548,6 +548,109 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
   box-shadow: 0 0 0 var(--edge);
 }
 
+/* ── กล่องข้อความอธิบายผล (msgbox) — ใช้แทน log ดิบๆ ตอนมีเรื่องต้องอธิบาย ── */
+
+.msgbox {
+  border: 3px solid var(--edge);
+  box-shadow: var(--shadow);
+  background: var(--surface);
+}
+
+.msgbox__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 3px solid var(--edge);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.96rem;
+}
+
+.msgbox__icon {
+  flex: none;
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--edge);
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  background: var(--surface);
+}
+
+.msgbox--ok .msgbox__head { background: var(--teal); color: #f3fff0; }
+.msgbox--ok .msgbox__icon { color: var(--teal-deep); }
+.msgbox--error .msgbox__head { background: var(--clay); color: #fff8e8; }
+.msgbox--error .msgbox__icon { color: var(--clay-deep); }
+.msgbox--warn .msgbox__head { background: var(--amber); color: var(--ink); }
+.msgbox--warn .msgbox__icon { color: var(--amber-deep); }
+
+.msgbox__body {
+  padding: 14px;
+}
+
+.msgbox__body > p {
+  margin: 0 0 12px;
+  font-size: 0.88rem;
+  line-height: 1.7;
+}
+
+.msgbox__body > p:last-child {
+  margin-bottom: 0;
+}
+
+.msgbox__why {
+  margin: 0 0 12px;
+  border: 2px solid var(--edge);
+}
+
+.msgbox__why summary {
+  padding: 8px 10px;
+  background: var(--surface-sunken);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.msgbox__why ul,
+.msgbox__todo ul {
+  margin: 0;
+  padding: 10px 10px 10px 26px;
+  font-size: 0.83rem;
+  line-height: 1.9;
+}
+
+.msgbox__todo {
+  margin: 0 0 14px;
+}
+
+.msgbox__todo p {
+  margin: 0 0 4px;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.84rem;
+}
+
+.msgbox__actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.msgbox__actions .btn {
+  width: auto;
+}
+
+.msgbox__body code {
+  font-family: var(--font-mono);
+  font-size: 0.82em;
+  background: var(--surface-sunken);
+  padding: 1px 5px;
+}
+
 @media (prefers-reduced-motion: reduce) {
   * {
     transition: none !important;

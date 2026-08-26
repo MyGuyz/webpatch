@@ -14,6 +14,8 @@ const stepFile = el('step-file');
 const stepRun = el('step-run');
 const fileInput = el('source-file');
 const fileSummary = el('file-summary');
+const fileMsgbox = el('file-msgbox');
+const msgboxRetry = el('msgbox-retry');
 const applyBtn = el('apply-btn');
 const downloadBtn = el('download-btn');
 const shareBtn = el('share-btn');
@@ -136,6 +138,7 @@ function resetFileState() {
   sourceName = '';
   fileInput.value = '';
   fileSummary.textContent = '';
+  fileMsgbox.hidden = true;
   applyBtn.disabled = true;
   hideDownload();
 }
@@ -153,6 +156,7 @@ function hideDownload() {
 
 async function handleFileChosen() {
   hideDownload();
+  fileMsgbox.hidden = true;
   const file = fileInput.files?.[0];
   if (!file) {
     resetFileState();
@@ -184,7 +188,7 @@ async function handleFileChosen() {
       log('ไฟล์นี้ไม่ตรงรุ่นที่แพตช์รองรับ', 'error');
       log(`ที่ต้องการ: ${selectedGame.source_sha1}`, 'error');
       log(`ไฟล์ของคุณ: ${actual}`, 'error');
-      log('แปะไปจะได้ไฟล์เสีย จึงยังไม่ให้แปะ — ลองหาไฟล์ให้ตรงสเปกด้านบนก่อนนะ', 'error');
+      fileMsgbox.hidden = false;
       sourceBytes = null;
       return;
     }
@@ -309,6 +313,11 @@ gameSelect.addEventListener('change', () => {
 });
 
 fileInput.addEventListener('change', handleFileChosen);
+msgboxRetry.addEventListener('click', () => {
+  sfxTick();
+  resetFileState();
+  fileInput.click();
+});
 applyBtn.addEventListener('click', runPatch);
 downloadBtn.addEventListener('click', downloadResult);
 shareBtn.addEventListener('click', shareGame);

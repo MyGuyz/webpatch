@@ -99,6 +99,41 @@ const consolesWithGames = consoles.filter((c) =>
               <input type="file" id="source-file" />
             </label>
             <p class="muted" id="file-summary"></p>
+
+            <div class="msgbox msgbox--error" id="file-msgbox" hidden>
+              <div class="msgbox__head">
+                <span class="msgbox__icon">✕</span>
+                <span>ไฟล์นี้ไม่ตรงกับที่แพตช์รองรับ</span>
+              </div>
+              <div class="msgbox__body">
+                <p>
+                  แพตช์แก้ไขข้อมูลในไฟล์ตามตำแหน่งที่ตายตัว ถ้าไฟล์ไม่ตรงกันแม้แต่ไบต์เดียว
+                  การแปะจะทำให้ไฟล์เกมพังจนเปิดเล่นไม่ได้ ระบบเลย<strong>ไม่ยอมให้กดแปะไฟล์นี้</strong>
+                  เพื่อกันไฟล์เกมของคุณเสีย
+                </p>
+                <details class="msgbox__why">
+                  <summary>▸ ทำไมถึงไม่ตรง?</summary>
+                  <ul>
+                    <li>ไฟล์เป็นคนละภาค/ประเทศ (เช่น Japan แทน USA)</li>
+                    <li>ไฟล์เคยถูกแพตช์หรือแก้ไขมาก่อนแล้ว</li>
+                    <li>ไฟล์มี header แถมมา (พบบ่อยในบางเว็บที่แจกไฟล์ .smc/.nes)</li>
+                    <li>ดาวน์โหลดมาจากคนละแหล่งที่ dump ไม่ตรงมาตรฐาน</li>
+                  </ul>
+                </details>
+                <div class="msgbox__todo">
+                  <p>ลองทำแบบนี้ดูครับ</p>
+                  <ul>
+                    <li>เช็กชื่อไฟล์ต้นฉบับที่ต้องใช้ในกล่องข้อมูลเกมด้านบนอีกครั้ง</li>
+                    <li>ลองหาไฟล์จากแหล่งอื่น (ต้องเป็นไฟล์ต้นฉบับที่ยังไม่ถูกแก้ไข)</li>
+                    <li>ลองหลายรอบแล้วไม่ได้ ไปแจ้งบั๊กบอกเราได้เลย เดี๋ยวช่วยดูให้</li>
+                  </ul>
+                </div>
+                <div class="msgbox__actions">
+                  <button class="btn btn--small" type="button" id="msgbox-retry">🔁 เลือกไฟล์ใหม่</button>
+                  <a class="btn btn--small btn--ghost" href="/report-bug">🐛 ไปหน้าแจ้งบั๊ก</a>
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 
