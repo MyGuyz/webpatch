@@ -50,68 +50,6 @@
   --nav-height: 68px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme='light']) {
-    --paper: #1b140c;
-    --surface: #241b10;
-    --surface-sunken: #3a2c14;
-    --edge: #f4ecd0;
-
-    --ink: #f4ecd0;
-    --ink-soft: #cbb98f;
-
-    --clay: #e8563c;
-    --clay-deep: #ff8266;
-    --clay-wash: #3a1c14;
-
-    --teal: #5fc767;
-    --teal-deep: #8fe094;
-    --teal-wash: #17301a;
-
-    --amber: #e8c22f;
-    --amber-deep: #f2d873;
-    --amber-wash: #362a0e;
-
-    --blue: #5b8fe0;
-    --blue-deep: #8bb0ec;
-
-    --danger: #ff8266;
-
-    --shadow: 4px 4px 0 var(--edge);
-    --shadow-lift: 6px 6px 0 var(--edge);
-  }
-}
-
-:root[data-theme='dark'] {
-  --paper: #1b140c;
-  --surface: #241b10;
-  --surface-sunken: #3a2c14;
-  --edge: #f4ecd0;
-
-  --ink: #f4ecd0;
-  --ink-soft: #cbb98f;
-
-  --clay: #e8563c;
-  --clay-deep: #ff8266;
-  --clay-wash: #3a1c14;
-
-  --teal: #5fc767;
-  --teal-deep: #8fe094;
-  --teal-wash: #17301a;
-
-  --amber: #e8c22f;
-  --amber-deep: #f2d873;
-  --amber-wash: #362a0e;
-
-  --blue: #5b8fe0;
-  --blue-deep: #8bb0ec;
-
-  --danger: #ff8266;
-
-  --shadow: 4px 4px 0 var(--edge);
-  --shadow-lift: 6px 6px 0 var(--edge);
-}
-
 * {
   box-sizing: border-box;
 }
@@ -153,6 +91,12 @@ a {
   max-width: 720px;
   margin: 0 auto;
   padding: 0 16px;
+}
+
+@media (min-width: 720px) {
+  .wrap {
+    max-width: 960px;
+  }
 }
 
 /* ── ตลับเกม: องค์ประกอบเด่นของธีมนี้ ─────────────────────────
@@ -338,8 +282,8 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
 }
 
 .nav__icon {
-  font-size: 1.3rem;
-  line-height: 1;
+  width: 22px;
+  height: 22px;
 }
 
 /* ── เมนูบน (จอกว้าง) ─────────────────────────────────────── */
@@ -395,6 +339,11 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
   border-color: var(--edge);
 }
 
+.top-nav__icon {
+  width: 18px;
+  height: 18px;
+}
+
 @media (min-width: 720px) {
   .nav {
     display: none;
@@ -402,6 +351,10 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
 
   .top-nav {
     display: block;
+  }
+
+  .top-nav__inner {
+    max-width: 960px;
   }
 
   body {

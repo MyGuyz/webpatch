@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import GameCard from '../components/GameCard.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 import { getPublishedGames, getActiveAnnouncement, isUsingSeedData } from '../lib/games.js';
 
 const games = await getPublishedGames();
@@ -18,12 +19,15 @@ const inProgress = games.filter((g) => g.status === 'wip');
       <span>เกมย้อนยุค</span>
     </div>
     <div class="hero__body">
-      <h1 class="hero__title">เกมไทย</h1>
-      <p class="hero__tag">เล่นเกมที่รักในภาษาที่เข้าใจ</p>
-      <a class="credit" href="https://www.facebook.com/maeepaew/" target="_blank" rel="noopener">
-        <span class="credit__mark" aria-hidden="true">f</span>
-        แปลโดยเพจ <strong>แมแปว</strong>
-      </a>
+      <div class="hero__text">
+        <h1 class="hero__title">เกมไทย</h1>
+        <p class="hero__tag">เล่นเกมที่รักในภาษาที่เข้าใจ</p>
+        <a class="credit" href="https://www.facebook.com/maeepaew/" target="_blank" rel="noopener">
+          <span class="credit__mark" aria-hidden="true">f</span>
+          แปลโดยเพจ <strong>แมแปว</strong>
+        </a>
+      </div>
+      <PixelIcon name="patch" class="hero__art" />
     </div>
   </header>
 
@@ -122,6 +126,28 @@ const inProgress = games.filter((g) => g.status === 'wip');
   .hero__body {
     padding: 30px 20px 34px;
     text-align: center;
+  }
+
+  :global(.hero__art) {
+    display: none;
+  }
+
+  @media (min-width: 720px) {
+    .hero__body {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 32px;
+      text-align: left;
+      padding: 36px 40px;
+    }
+
+    :global(.hero__art) {
+      display: block;
+      flex: none;
+      width: 120px;
+      height: 120px;
+    }
   }
 
   .hero__title {
