@@ -15,6 +15,7 @@ const fileInput = el('source-file');
 const fileSummary = el('file-summary');
 const applyBtn = el('apply-btn');
 const downloadBtn = el('download-btn');
+const shareBtn = el('share-btn');
 const logBox = el('log');
 
 /** ไฟล์ที่ใหญ่กว่านี้เสี่ยงแรมไม่พอบนมือถือ จึงเตือนก่อน */
@@ -107,6 +108,7 @@ function resetFileState() {
 
 function hideDownload() {
   downloadBtn.hidden = true;
+  shareBtn.hidden = true;
   if (resultUrl) {
     URL.revokeObjectURL(resultUrl);
     resultUrl = null;
@@ -191,6 +193,7 @@ async function runPatch() {
     resultUrl = URL.createObjectURL(new Blob([result], { type: 'application/octet-stream' }));
     downloadBtn.hidden = false;
     downloadBtn.dataset.filename = thaiFileName(sourceName);
+    shareBtn.hidden = false;
 
     log('แปะเสร็จแล้ว! กดปุ่มดาวน์โหลดด้านล่างได้เลย', 'ok');
   } catch (error) {
@@ -208,6 +211,33 @@ function downloadResult() {
   link.href = resultUrl;
   link.download = downloadBtn.dataset.filename ?? 'patched.bin';
   link.click();
+}
+
+async function shareGame() {
+  if (!selectedGame) return;
+
+  const url = `${location.origin}/patch?game=${selectedGame.id}`;
+  const text = `แปะแพตช์ภาษาไทย ${selectedGame.title} ได้แล้วที่นี่`;
+  const originalLabel = shareBtn.textContent;
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: selectedGame.title, text, url });
+    } catch {
+      // ผู้ใช้กดยกเลิกกล่องแชร์เอง ไม่ต้องแจ้งอะไรเพิ่ม
+    }
+    return;
+  }
+
+  try {
+    await navigator.clipboard.writeText(url);
+    shareBtn.textContent = '✓ คัดลอกลิงก์แล้ว';
+  } catch {
+    shareBtn.textContent = '⚠ คัดลอกไม่สำเร็จ ลองคัดลอกจากแถบที่อยู่เอง';
+  }
+  setTimeout(() => {
+    shareBtn.textContent = originalLabel;
+  }, 2000);
 }
 
 // ── ตัวช่วย ───────────────────────────────────────────────
@@ -241,6 +271,7 @@ gameSelect.addEventListener('change', () => {
 fileInput.addEventListener('change', handleFileChosen);
 applyBtn.addEventListener('click', runPatch);
 downloadBtn.addEventListener('click', downloadResult);
+shareBtn.addEventListener('click', shareGame);
 
 fillGameOptions();
 

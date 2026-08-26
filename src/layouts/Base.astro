@@ -28,11 +28,22 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Mitr:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
     />
+
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="icon" href="/icon-192.png" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+    <meta name="theme-color" content="#c2542f" />
   </head>
   <body>
     <main class="wrap">
       <slot />
     </main>
     <BottomNav />
+    <script>
+      // ลงทะเบียนไว้เฉพาะให้กด "ติดตั้งเป็นแอป" ได้ ไม่ได้ใช้แคชอะไร (ดู public/sw.js)
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js');
+      }
+    </script>
   </body>
 </html>
