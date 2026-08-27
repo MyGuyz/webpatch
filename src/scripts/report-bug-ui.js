@@ -8,11 +8,15 @@ const el = (id) => document.getElementById(id);
 document.addEventListener('astro:page-load', init);
 
 function init() {
-  const games = window.__GAMES__ ?? [];
   const form = el('bug-form');
   if (!form) return;
 
+  // อ่านจาก JSON data island แทน window.__GAMES__ — กันข้อมูลจากหน้าอื่นที่ใช้ชื่อ
+  // ตัวแปรเดียวกันแต่รูปร่างไม่เหมือนกันค้างอยู่ (ดูคำอธิบายเดียวกันใน patch-ui.js)
+  const games = JSON.parse(el('report-bug-data')?.textContent ?? '[]');
+
   const msg = el('msg');
+  const consoleSelect = el('console-select');
   const gameSelect = el('game-select');
   const versionSelect = el('version-select');
   const mediaInput = el('media-input');
@@ -28,6 +32,10 @@ function init() {
   }
 
   fillGameOptions();
+
+  consoleSelect.addEventListener('change', () => {
+    fillGameOptions();
+  });
 
   gameSelect.addEventListener('change', () => {
     fillVersionOptions();
@@ -46,11 +54,16 @@ function init() {
   });
 
   function fillGameOptions() {
+    const consoleId = consoleSelect.value;
+    const list = consoleId
+      ? games.filter((g) => String(g.console?.id) === consoleId)
+      : games;
+
     gameSelect.innerHTML = '<option value="">— เลือกเกม —</option>';
-    for (const game of games) {
+    for (const game of list) {
       const option = document.createElement('option');
       option.value = String(game.id);
-      option.textContent = game.console ? `${game.title} (${game.console})` : game.title;
+      option.textContent = game.console ? `${game.title} (${game.console.name})` : game.title;
       gameSelect.appendChild(option);
     }
     fillVersionOptions();

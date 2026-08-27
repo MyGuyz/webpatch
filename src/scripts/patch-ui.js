@@ -17,11 +17,18 @@ let resultUrl = null;
 document.addEventListener('astro:page-load', init);
 
 function init() {
-  const games = window.__GAMES__ ?? [];
-  const preselectId = window.__PRESELECT__;
-
   const consoleSelect = el('console-select');
   if (!consoleSelect) return; // หน้านี้ยังไม่มีเกมพร้อมให้แปะ เลยไม่มีฟอร์มให้ผูก
+
+  // อ่านจาก JSON data island แทน window global ตัวแปรธรรมดา — เพราะเว็บนี้เปลี่ยนหน้า
+  // แบบ SPA และ window.__GAMES__ ถูกใช้ชื่อซ้ำกันหลายหน้าโดยรูปร่างข้อมูลไม่เหมือนกัน
+  // (เช่นหน้านี้ console เป็น object แต่หน้าแจ้งบั๊กเป็น string) ถ้าตั้งค่าผ่าน
+  // <script> ธรรมดา บางจังหวะเบราว์เซอร์จะข้ามไม่รันสคริปต์ซ้ำ (เนื้อหาเหมือนที่เคยรันไปแล้ว
+  // ในเซสชันนี้) ทำให้ข้อมูลจากอีกหน้าค้างอยู่ — data island เป็นแค่ข้อมูลในหน้า
+  // ไม่ใช่สคริปต์ที่ต้อง "รัน" จึงไม่มีปัญหานี้ อ่านค่าปัจจุบันตรงๆ ได้เสมอ
+  const data = JSON.parse(el('patch-data')?.textContent ?? '{}');
+  const games = data.games ?? [];
+  const preselectId = data.preselectId;
 
   const gameSelect = el('game-select');
   const gameInfo = el('game-info');

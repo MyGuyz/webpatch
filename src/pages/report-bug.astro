@@ -1,15 +1,19 @@
 ---
 import Base from '../layouts/Base.astro';
-import { getReadyGames, getVersionsByGame, isUsingSeedData } from '../lib/games.js';
+import { getReadyGames, getConsoles, getVersionsByGame, isUsingSeedData } from '../lib/games.js';
 
 const games = await getReadyGames();
+const consoles = await getConsoles();
 const versionsByGame = await getVersionsByGame(games);
 const usingSeed = isUsingSeedData();
+
+// เหลือเฉพาะเครื่องที่มีเกมพร้อมแปะจริง จะได้ไม่มีตัวเลือกที่กดแล้วว่างเปล่า (เหมือนหน้าแปะแพตช์)
+const consolesWithGames = consoles.filter((c) => games.some((g) => g.console?.id === c.id));
 
 const gamesForClient = games.map((g) => ({
   id: g.id,
   title: g.title,
-  console: g.console?.name ?? null,
+  console: g.console ? { id: g.console.id, name: g.console.name } : null,
   versions: versionsByGame[g.id] ?? [],
 }));
 
@@ -46,6 +50,16 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         <section class="cart">
           <div class="cart__label"><span>1 · เกมและเวอร์ชัน</span></div>
           <div class="cart__body">
+            <label class="field">
+              <span class="field__label">เครื่องเล่น</span>
+              <select id="console-select">
+                <option value="">— ทุกเครื่อง —</option>
+                {consolesWithGames.map((c) => (
+                  <option value={c.id}>{c.name}</option>
+                ))}
+              </select>
+            </label>
+
             <label class="field">
               <span class="field__label">เกม</span>
               <select name="game_id" id="game-select" required>
@@ -131,14 +145,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     )
   }
 
-  <script
-    is:inline
-    data-astro-rerun
-    define:vars={{ supabaseUrl, supabaseKey, gamesJson: JSON.stringify(gamesForClient) }}
-  >
+  <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
     window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
-    window.__GAMES__ = JSON.parse(gamesJson);
   </script>
+  <script type="application/json" id="report-bug-data" set:html={JSON.stringify(gamesForClient)} />
   <script src="../scripts/report-bug-ui.js"></script>
 </Base>
 

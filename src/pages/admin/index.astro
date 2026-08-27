@@ -80,14 +80,10 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     </article>
   </template>
 
-  <script
-    is:inline
-    data-astro-rerun
-    define:vars={{ supabaseUrl, supabaseKey, consolesJson: JSON.stringify(consoles) }}
-  >
+  <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
     window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
-    window.__CONSOLES__ = JSON.parse(consolesJson);
   </script>
+  <script type="application/json" id="admin-consoles-data" set:html={JSON.stringify(consoles)} />
   <script src="../../scripts/admin-list.js"></script>
 </Base>
 

@@ -194,18 +194,13 @@ const consolesWithGames = consoles.filter((c) =>
   }
 
   <script
-    is:inline
-    data-astro-rerun
-    define:vars={{
-      gamesJson: JSON.stringify(
-        games.map((g) => ({ ...g, changelog: changelogsByGame[g.id] ?? [] }))
-      ),
-      preselectedId,
-    }}
-  >
-    window.__GAMES__ = JSON.parse(gamesJson);
-    window.__PRESELECT__ = preselectedId;
-  </script>
+    type="application/json"
+    id="patch-data"
+    set:html={JSON.stringify({
+      games: games.map((g) => ({ ...g, changelog: changelogsByGame[g.id] ?? [] })),
+      preselectId: preselectedId,
+    })}
+  />
   <script src="../scripts/patch-ui.js"></script>
 </Base>
 

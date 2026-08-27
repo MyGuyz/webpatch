@@ -15,7 +15,7 @@ function init() {
   const signinSection = el('signin');
   if (!signinSection) return;
 
-  const consoles = window.__CONSOLES__ ?? [];
+  const consoles = JSON.parse(el('admin-consoles-data')?.textContent ?? '[]');
   const consoleName = (id) => consoles.find((c) => c.id === id)?.name ?? '—';
 
   const workspace = el('workspace');

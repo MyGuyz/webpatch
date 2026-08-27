@@ -196,7 +196,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     </div>
   </section>
 
-  <script is:inline data-astro-rerun define:vars={{ supabaseUrl, supabaseKey }}>
+  <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
     window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
   </script>
   <script src="../../scripts/admin-form.js"></script>
