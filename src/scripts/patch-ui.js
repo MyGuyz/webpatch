@@ -33,24 +33,27 @@ function init() {
   const gameSelect = el('game-select');
   const gameInfo = el('game-info');
   const stepFile = el('step-file');
-  const stepRun = el('step-run');
   const fileInput = el('source-file');
   const fileSummary = el('file-summary');
   const fileMsgbox = el('file-msgbox');
   const msgboxRetry = el('msgbox-retry');
+  const msgboxClose = el('msgbox-close');
   const fileMsgboxZip = el('file-msgbox-zip');
   const msgboxZipRetry = el('msgbox-zip-retry');
+  const msgboxZipClose = el('msgbox-zip-close');
   const fileMsgboxOk = el('file-msgbox-ok');
+  const msgboxOkClose = el('msgbox-ok-close');
+  const bigFileNote = el('patch-big-file-note');
+  const runError = el('patch-run-error');
   const applyBtn = el('apply-btn');
-  const downloadBtn = el('download-btn');
   const patchDoneModal = el('patch-done-modal');
   const patchDoneClose = el('patch-done-close');
   const patchDoneDoneBtn = el('patch-done-done-btn');
   const patchDoneCoverImg = el('patch-done-cover-img');
   const patchDoneCoverArt = patchDoneModal.querySelector('.patch-done__cover-art');
+  const patchDoneCoverDl = el('patch-done-cover-dl');
   const patchDoneTitle = el('patch-done-title');
   const patchDoneFilename = el('patch-done-filename');
-  const logBox = el('log');
 
   if (resultUrl) {
     URL.revokeObjectURL(resultUrl);
@@ -60,24 +63,7 @@ function init() {
   let selectedGame = null;
   let sourceBytes = null;
   let sourceName = '';
-
-  // ── กล่อง log ─────────────────────────────────────────────
-
-  let logCount = 0;
-
-  function log(message, kind = '') {
-    logCount += 1;
-    const line = document.createElement('span');
-    line.className = kind ? `log__line--${kind}` : '';
-    line.textContent = `${String(logCount).padStart(2, '0')}  ${message}\n`;
-    logBox.appendChild(line);
-    logBox.scrollTop = logBox.scrollHeight;
-  }
-
-  function clearLog() {
-    logBox.textContent = '';
-    logCount = 0;
-  }
+  let resultFilename = '';
 
   // ── เลือกเกม ──────────────────────────────────────────────
 
@@ -105,7 +91,6 @@ function init() {
     if (!game) {
       gameInfo.hidden = true;
       stepFile.hidden = true;
-      stepRun.hidden = true;
       return;
     }
 
@@ -129,11 +114,6 @@ function init() {
 
     gameInfo.hidden = false;
     stepFile.hidden = false;
-    stepRun.hidden = false;
-
-    clearLog();
-    log(`เลือกเกม ${game.title} แล้ว`);
-    log('รอเลือกไฟล์เกมต้นฉบับของคุณ');
   }
 
   function renderChangelog(entries) {
@@ -171,19 +151,36 @@ function init() {
     fileInput.value = '';
     fileSummary.textContent = '';
     showFileStatus('none');
-    applyBtn.disabled = true;
-    hideDownload();
+    setApplyPhase('patch');
+    bigFileNote.hidden = true;
+    runError.hidden = true;
+    closePatchDoneModal();
   }
 
-  /** สลับกล่องสถานะไฟล์ 3 แบบ (error/zip/ok) แบบฝังอยู่ในหน้าเลย ไม่ใช่ป๊อปอัป
-     ให้เห็นทีละกล่องตามผลตรวจไฟล์ล่าสุด — ตรงกับ mockup ที่ร่างไว้ */
+  /** สลับป๊อปอัปสถานะไฟล์ 3 แบบ (error/zip/ok) — โชว์ทีละอันตามผลตรวจไฟล์ล่าสุด */
   function showFileStatus(kind) {
-    fileMsgbox.hidden = kind !== 'error';
-    fileMsgboxZip.hidden = kind !== 'zip';
-    fileMsgboxOk.hidden = kind !== 'ok';
+    fileMsgbox.classList.toggle('open', kind === 'error');
+    fileMsgboxZip.classList.toggle('open', kind === 'zip');
+    fileMsgboxOk.classList.toggle('open', kind === 'ok');
   }
 
-  function hideDownload() {
+  /** ปุ่มเดียวในป๊อปอัป "ไฟล์นี้ใช้ได้" ทำหน้าที่ 2 อย่างสลับกัน:
+     ก่อนแปะ = ปุ่มแปะ, แปะเสร็จ = ปุ่มดาวน์โหลด — ไม่ต้องมี 2 ปุ่มค้างพร้อมกัน */
+  function setApplyPhase(phase) {
+    applyBtn.dataset.phase = phase;
+    if (phase === 'patch') {
+      applyBtn.textContent = '✨ แปะแพตช์ภาษาไทย';
+      applyBtn.disabled = false;
+    } else if (phase === 'running') {
+      applyBtn.textContent = '⏳ กำลังแปะ...';
+      applyBtn.disabled = true;
+    } else if (phase === 'download') {
+      applyBtn.textContent = '↓ ดาวน์โหลดไฟล์ภาษาไทย';
+      applyBtn.disabled = false;
+    }
+  }
+
+  function closePatchDoneModal() {
     patchDoneModal.classList.remove('open');
     if (resultUrl) {
       URL.revokeObjectURL(resultUrl);
@@ -194,8 +191,11 @@ function init() {
   // ── ตรวจไฟล์ต้นฉบับ ────────────────────────────────────────
 
   async function handleFileChosen() {
-    hideDownload();
+    closePatchDoneModal();
     showFileStatus('none');
+    setApplyPhase('patch');
+    runError.hidden = true;
+
     const file = fileInput.files?.[0];
     if (!file) {
       resetFileState();
@@ -204,50 +204,36 @@ function init() {
 
     sourceName = file.name;
     fileSummary.textContent = `${file.name} · ${formatSize(file.size)}`;
-    applyBtn.disabled = true;
-
-    if (file.size > BIG_FILE_BYTES) {
-      log(`ไฟล์ใหญ่ (${formatSize(file.size)}) อาจใช้เวลาสักพัก อย่าเพิ่งปิดแท็บนะ`);
-    }
 
     try {
-      log('กำลังอ่านไฟล์...');
       sourceBytes = new Uint8Array(await file.arrayBuffer());
     } catch {
-      log('อ่านไฟล์ไม่สำเร็จ — ไฟล์อาจใหญ่เกินกว่าที่เครื่องจะไหว ลองบนคอมพิวเตอร์ดูนะ', 'error');
+      sfxError();
+      alert('อ่านไฟล์ไม่สำเร็จ — ไฟล์อาจใหญ่เกินกว่าที่เครื่องจะไหว ลองบนคอมพิวเตอร์ดูนะ');
       return;
     }
 
     if (isZipFile(sourceBytes, file.name)) {
       sfxError();
-      log('ไฟล์นี้เป็นไฟล์บีบอัด (.zip) ยังไม่ใช่ไฟล์เกม', 'error');
       showFileStatus('zip');
       sourceBytes = null;
       return;
     }
 
     if (selectedGame?.source_sha1) {
-      log('กำลังตรวจว่าไฟล์ตรงรุ่นไหม...');
       const actual = await sha1Hex(sourceBytes);
 
       if (actual.toLowerCase() !== selectedGame.source_sha1.toLowerCase()) {
         sfxError();
-        log('ไฟล์นี้ไม่ตรงรุ่นที่แพตช์รองรับ', 'error');
-        log(`ที่ต้องการ: ${selectedGame.source_sha1}`, 'error');
-        log(`ไฟล์ของคุณ: ${actual}`, 'error');
         showFileStatus('error');
         sourceBytes = null;
         return;
       }
-      log('ไฟล์ตรงรุ่นที่แพตช์รองรับ', 'ok');
-      showFileStatus('ok');
-    } else {
-      log('แพตช์นี้ไม่ได้ระบุลายนิ้วมือไฟล์ไว้ จึงข้ามการตรวจรุ่น');
     }
 
-    applyBtn.disabled = false;
+    bigFileNote.hidden = file.size <= BIG_FILE_BYTES;
     sfxConfirm();
-    log('พร้อมแปะแล้ว กดปุ่มด้านบนได้เลย', 'ok');
+    showFileStatus('ok');
   }
 
   // ── แปะแพตช์ ──────────────────────────────────────────────
@@ -256,13 +242,10 @@ function init() {
     if (!selectedGame || !sourceBytes) return;
 
     sfxConfirm();
-    applyBtn.disabled = true;
-    hideDownload();
-    const originalLabel = applyBtn.textContent;
-    applyBtn.textContent = '⏳ กำลังแปะ...';
+    runError.hidden = true;
+    setApplyPhase('running');
 
     try {
-      log('กำลังโหลดไฟล์แพตช์...');
       const response = await fetch(`/api/patch-file/${selectedGame.id}`);
 
       if (!response.ok) {
@@ -271,49 +254,53 @@ function init() {
       }
 
       const patchBytes = new Uint8Array(await response.arrayBuffer());
-      log(`โหลดแพตช์แล้ว (${formatSize(patchBytes.length)})`);
 
-      // ยอมให้หน้าจอวาด log ก่อน เพราะขั้นถัดไปกินเวลาและบล็อกจอ
+      // ยอมให้หน้าจอวาดสถานะ "กำลังแปะ..." ก่อน เพราะขั้นถัดไปกินเวลาและบล็อกจอ
       await nextFrame();
 
-      log('กำลังแปะ...');
       const result = applyPatch(sourceBytes, patchBytes, selectedGame.patch_format);
 
+      if (resultUrl) URL.revokeObjectURL(resultUrl);
       resultUrl = URL.createObjectURL(new Blob([result], { type: 'application/octet-stream' }));
-      downloadBtn.dataset.filename = thaiFileName(sourceName);
-
-      patchDoneTitle.textContent = selectedGame.title;
-      patchDoneFilename.textContent = thaiFileName(sourceName);
-      if (selectedGame.cover_url) {
-        patchDoneCoverImg.src = selectedGame.cover_url;
-        patchDoneCoverImg.alt = `ปกเกม ${selectedGame.title}`;
-        patchDoneCoverImg.hidden = false;
-        patchDoneCoverArt.hidden = true;
-      } else {
-        patchDoneCoverImg.hidden = true;
-        patchDoneCoverArt.hidden = false;
-      }
-      patchDoneModal.classList.add('open');
+      resultFilename = thaiFileName(sourceName);
 
       sfxSuccess();
-      log('แปะเสร็จแล้ว! กดปุ่มดาวน์โหลดในป๊อปอัปได้เลย', 'ok');
+      setApplyPhase('download');
     } catch (error) {
       sfxError();
-      log(error.message, 'error');
-      log('ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ', 'error');
-    } finally {
-      applyBtn.textContent = originalLabel;
-      applyBtn.disabled = false;
+      runError.hidden = false;
+      runError.textContent = `${error.message} — ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ`;
+      setApplyPhase('patch');
     }
   }
 
-  function downloadResult() {
-    if (!resultUrl) return;
+  /** ดาวน์โหลดไฟล์ผลลัพธ์ ปิดป๊อปอัป "ไฟล์นี้ใช้ได้" แล้วเด้งป๊อปอัปคู่มือเปิดเล่นต่อทันที */
+  function downloadAndShowGuide() {
+    if (!resultUrl || !selectedGame) return;
     sfxTick();
+
     const link = document.createElement('a');
     link.href = resultUrl;
-    link.download = downloadBtn.dataset.filename ?? 'patched.bin';
+    link.download = resultFilename;
     link.click();
+
+    showFileStatus('none');
+
+    patchDoneTitle.textContent = selectedGame.title;
+    patchDoneFilename.textContent = resultFilename;
+    if (selectedGame.cover_url) {
+      patchDoneCoverImg.src = selectedGame.cover_url;
+      patchDoneCoverImg.alt = `ปกเกม ${selectedGame.title}`;
+      patchDoneCoverImg.hidden = false;
+      patchDoneCoverArt.hidden = true;
+      patchDoneCoverDl.href = selectedGame.cover_url;
+      patchDoneCoverDl.hidden = false;
+    } else {
+      patchDoneCoverImg.hidden = true;
+      patchDoneCoverArt.hidden = false;
+      patchDoneCoverDl.hidden = true;
+    }
+    patchDoneModal.classList.add('open');
   }
 
   // ── เริ่มทำงาน ────────────────────────────────────────────
@@ -333,20 +320,37 @@ function init() {
     resetFileState();
     fileInput.click();
   });
+  msgboxClose.addEventListener('click', () => {
+    sfxCancel();
+    showFileStatus('none');
+  });
   msgboxZipRetry.addEventListener('click', () => {
     sfxTick();
     resetFileState();
     fileInput.click();
   });
-  applyBtn.addEventListener('click', runPatch);
-  downloadBtn.addEventListener('click', downloadResult);
+  msgboxZipClose.addEventListener('click', () => {
+    sfxCancel();
+    showFileStatus('none');
+  });
+  msgboxOkClose.addEventListener('click', () => {
+    sfxCancel();
+    showFileStatus('none');
+  });
+  applyBtn.addEventListener('click', () => {
+    if (applyBtn.dataset.phase === 'download') {
+      downloadAndShowGuide();
+    } else {
+      runPatch();
+    }
+  });
   patchDoneClose.addEventListener('click', () => {
     sfxCancel();
-    patchDoneModal.classList.remove('open');
+    closePatchDoneModal();
   });
   patchDoneDoneBtn.addEventListener('click', () => {
     sfxTick();
-    patchDoneModal.classList.remove('open');
+    closePatchDoneModal();
   });
 
   fillGameOptions();

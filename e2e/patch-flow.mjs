@@ -87,7 +87,6 @@ await page.goto(`${BASE}/patch`, { waitUntil: 'domcontentloaded' });
 
 await check('ตอนแรกยังไม่โชว์ขั้นตอนถัดไป จนกว่าจะเลือกเกม', async () => {
   assert.ok(await page.locator('#step-file').isHidden());
-  assert.ok(await page.locator('#step-run').isHidden());
 });
 
 await check('เลือกเกมแล้วขั้นตอนถัดไปโผล่ขึ้นมา', async () => {
@@ -103,7 +102,7 @@ await check('กรองเกมตามเครื่องเล่นท�
   assert.ok(!options.some((o) => o.includes('Bahamut')), 'ไม่ควรมีเกมของเครื่องอื่น');
 });
 
-await check('ปฏิเสธไฟล์ผิดรุ่น และไม่ยอมให้กดแปะ (แสดงกล่องแจ้งเตือนฝังในหน้า)', async () => {
+await check('ปฏิเสธไฟล์ผิดรุ่น ขึ้นป๊อปอัปแจ้งเตือน และไม่มีปุ่มแปะให้กด', async () => {
   await page.selectOption('#console-select', '');
   await page.selectOption('#game-select', { label: 'Bahamut Lagoon (Super Famicom)' });
   await page.setInputFiles('#source-file', {
@@ -111,60 +110,48 @@ await check('ปฏิเสธไฟล์ผิดรุ่น และไม
     mimeType: 'application/octet-stream',
     buffer: Buffer.from([9, 9, 9, 9]),
   });
-  await page.waitForFunction(() => document.getElementById('log').textContent.includes('ไม่ตรงรุ่น'));
-  assert.ok(await page.locator('#apply-btn').isDisabled(), 'ปุ่มแปะต้องยังกดไม่ได้');
-  assert.ok(await page.locator('#file-msgbox').isVisible(), 'กล่องแจ้งไฟล์ไม่ตรงต้องโผล่');
+  await page.locator('#file-msgbox.open').waitFor({ state: 'attached' });
+  assert.equal(await page.locator('#file-msgbox-ok.open').count(), 0, 'ป๊อปอัปไฟล์ใช้ได้ต้องไม่ขึ้น');
 });
 
-await check('เลือกไฟล์บีบอัด (.zip) ถูกปฏิเสธด้วยข้อความเฉพาะ', async () => {
+await check('เลือกไฟล์บีบอัด (.zip) ถูกปฏิเสธด้วยป๊อปอัปข้อความเฉพาะ', async () => {
   await page.setInputFiles('#source-file', {
     name: 'archive.zip',
     mimeType: 'application/zip',
     buffer: Buffer.from([0x50, 0x4b, 0x03, 0x04, 1, 2, 3, 4]),
   });
-  await page.waitForFunction(() => document.getElementById('log').textContent.includes('ไฟล์บีบอัด'));
-  assert.ok(await page.locator('#apply-btn').isDisabled(), 'ปุ่มแปะต้องยังกดไม่ได้');
-  assert.ok(await page.locator('#file-msgbox-zip').isVisible(), 'กล่องแจ้งไฟล์บีบอัดต้องโผล่');
-  assert.equal(await page.locator('#file-msgbox').isVisible(), false, 'กล่องไฟล์ผิดรุ่นต้องซ่อนอยู่');
+  await page.locator('#file-msgbox-zip.open').waitFor({ state: 'attached' });
+  assert.equal(await page.locator('#file-msgbox.open').count(), 0, 'ป๊อปอัปไฟล์ผิดรุ่นต้องปิดอยู่');
 });
 
-await check('รับไฟล์ที่ตรงรุ่น แสดงกล่องยืนยันฝังในหน้า แล้วปุ่มแปะกดได้ทันที', async () => {
+await check('รับไฟล์ที่ตรงรุ่น เด้งป๊อปอัปไฟล์ใช้ได้ พร้อมปุ่มแปะ', async () => {
   await page.setInputFiles('#source-file', {
     name: 'bahamut.sfc',
     mimeType: 'application/octet-stream',
     buffer: SOURCE,
   });
-  await page.waitForFunction(() => document.getElementById('log').textContent.includes('พร้อมแปะแล้ว'));
-  assert.ok(await page.locator('#file-msgbox-ok').isVisible(), 'กล่องยืนยันไฟล์ใช้ได้ต้องโผล่');
-  assert.equal(await page.locator('#file-msgbox-zip').isVisible(), false, 'กล่องไฟล์บีบอัดต้องซ่อนอยู่');
-  assert.ok(await page.locator('#apply-btn').isEnabled(), 'ปุ่มแปะต้องกดได้เลยไม่ต้องกดปิดป๊อปอัปก่อน');
+  await page.locator('#file-msgbox-ok.open').waitFor({ state: 'attached' });
+  assert.equal(await page.locator('#file-msgbox-zip.open').count(), 0, 'ป๊อปอัปไฟล์บีบอัดต้องปิดอยู่');
+  assert.match(await page.locator('#apply-btn').textContent(), /แปะแพตช์ภาษาไทย/);
+  assert.ok(await page.locator('#apply-btn').isEnabled());
 });
 
-await check('ปุ่มดาวน์โหลดยังไม่โผล่ให้กดก่อนแปะเสร็จ', async () => {
-  assert.equal(await page.locator('#download-btn').isVisible(), false);
-});
-
-await check('แปะแพตช์ในเบราว์เซอร์แล้วเด้งป๊อปอัปพร้อมปุ่มดาวน์โหลด', async () => {
+await check('แปะแพตช์แล้วปุ่มเปลี่ยนเป็นปุ่มดาวน์โหลดในป๊อปอัปเดิม (ยังไม่เด้งป๊อปอัปคู่มือ)', async () => {
   await page.click('#apply-btn');
-  await page.locator('#patch-done-modal.open').waitFor({ state: 'attached', timeout: 15000 });
-  await page.locator('#download-btn').waitFor({ state: 'visible' });
-  assert.match(await page.locator('#log').textContent(), /แปะเสร็จแล้ว/);
-  assert.match(await page.locator('#patch-done-title').textContent(), /Bahamut Lagoon/);
-  assert.match(await page.locator('#patch-done-filename').textContent(), /bahamut_TH\.sfc/);
+  await page.waitForFunction(
+    () => document.getElementById('apply-btn').dataset.phase === 'download',
+    null,
+    { timeout: 15000 }
+  );
+  assert.match(await page.locator('#apply-btn').textContent(), /ดาวน์โหลดไฟล์ภาษาไทย/);
+  assert.ok(await page.locator('#file-msgbox-ok').evaluate((e) => e.classList.contains('open')), 'ป๊อปอัปไฟล์ใช้ได้ต้องยังเปิดอยู่');
+  assert.equal(await page.locator('#patch-done-modal.open').count(), 0, 'ป๊อปอัปคู่มือยังไม่ควรเด้งตอนนี้');
 });
 
-await check('ป๊อปอัปแปะเสร็จมีคำแนะนำวิธีเปิดเล่น', async () => {
-  assert.ok(await page.getByText('เปิดเล่นยังไง?').isVisible());
-});
-
-await check('ไม่มีปุ่มแชร์อีกต่อไป', async () => {
-  assert.equal(await page.locator('#share-btn').count(), 0);
-});
-
-await check('ไฟล์ที่ดาวน์โหลดถูกต้องทุกไบต์ และตั้งชื่อลงท้าย _TH', async () => {
+await check('กดปุ่มดาวน์โหลด: ไฟล์ถูกต้องทุกไบต์ ตั้งชื่อลงท้าย _TH แล้วเด้งป๊อปอัปคู่มือเปิดเล่น', async () => {
   const [download] = await Promise.all([
     page.waitForEvent('download'),
-    page.click('#download-btn'),
+    page.click('#apply-btn'),
   ]);
 
   assert.equal(download.suggestedFilename(), 'bahamut_TH.sfc');
@@ -177,6 +164,24 @@ await check('ไฟล์ที่ดาวน์โหลดถูกต้อ�
     createHash('sha1').update(EXPECTED).digest('hex'),
     `ไฟล์ผลลัพธ์ไม่ตรง: ได้ [${[...actual]}] ควรเป็น [${[...EXPECTED]}]`
   );
+
+  await page.locator('#patch-done-modal.open').waitFor({ state: 'attached' });
+  assert.equal(await page.locator('#file-msgbox-ok.open').count(), 0, 'ป๊อปอัปไฟล์ใช้ได้ต้องปิดไปแล้ว');
+  assert.match(await page.locator('#patch-done-title').textContent(), /Bahamut Lagoon/);
+  assert.match(await page.locator('#patch-done-filename').textContent(), /bahamut_TH\.sfc/);
+  assert.ok(await page.getByText('เปิดเล่นยังไง?').isVisible());
+});
+
+await check('ไม่มีปุ่มแชร์อีกต่อไป', async () => {
+  assert.equal(await page.locator('#share-btn').count(), 0);
+});
+
+await check('ไม่มีปุ่มดาวน์โหลดไฟล์เกมซ้ำในป๊อปอัปคู่มือ (โหลดไปแล้วในป๊อปอัปก่อนหน้า)', async () => {
+  assert.equal(await page.locator('#download-btn').count(), 0);
+});
+
+await check('ปุ่มดาวน์โหลดภาพปกซ่อนอยู่เมื่อเกมนี้ไม่มีภาพปก', async () => {
+  assert.equal(await page.locator('#patch-done-cover-dl').isVisible(), false);
 });
 
 await check('ปิดป๊อปอัปแปะเสร็จได้ด้วยปุ่ม "เข้าใจแล้ว เล่นได้เลย"', async () => {
