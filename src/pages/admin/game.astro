@@ -208,6 +208,18 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     margin: 20px 0 14px;
   }
 
+  @media (min-width: 1200px) {
+    #game-form,
+    #changelog-section {
+      max-width: 680px;
+      margin: 0 auto;
+    }
+
+    #changelog-section {
+      margin-top: 16px;
+    }
+  }
+
   .cart + .cart {
     margin-top: 16px;
   }

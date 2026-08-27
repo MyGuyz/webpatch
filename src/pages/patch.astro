@@ -214,6 +214,15 @@ const consolesWithGames = consoles.filter((c) =>
     margin: 0 0 16px;
   }
 
+  /* หน้านี้เป็นฟอร์มขั้นตอนเดียว จอกว้างมากๆ ปล่อยให้ select/input ยืดเต็มจอแล้วดูแปลก
+     เลยจำกัดความกว้างแล้ววางกลางจอแทน ให้ยังอ่านง่ายเหมือนฟอร์มทั่วไป */
+  @media (min-width: 1200px) {
+    .stack {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+  }
+
   .info__title {
     font-size: 1.2rem;
   }

@@ -70,10 +70,24 @@ body {
     var(--paper);
   color: var(--ink);
   font-family: var(--font-body);
-  font-size: 16px;
+  font-size: 1rem;
   line-height: 1.65;
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom));
   -webkit-text-size-adjust: 100%;
+}
+
+/* จอกว้างขึ้น คนนั่งไกลจอมากกว่ามือถือ ขยับ root font-size ขึ้น
+   ทุกอย่างที่ใช้หน่วย rem (ตัวหนังสือ/ปุ่ม/ป้ายเกือบทั้งเว็บ) จะโตตามไปด้วยอัตโนมัติ */
+@media (min-width: 720px) {
+  :root {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1200px) {
+  :root {
+    font-size: 18.5px;
+  }
 }
 
 h1, h2, h3 {
@@ -96,6 +110,13 @@ a {
 @media (min-width: 720px) {
   .wrap {
     max-width: 960px;
+    padding: 0 24px;
+  }
+}
+
+@media (min-width: 1200px) {
+  .wrap {
+    max-width: 1080px;
   }
 }
 
@@ -127,6 +148,12 @@ a {
 
 .cart__body {
   padding: 16px;
+}
+
+@media (min-width: 720px) {
+  .cart__body {
+    padding: 20px 22px;
+  }
 }
 
 /* ── ป้ายสถานะ ───────────────────────────────────────────── */
@@ -354,10 +381,17 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
 
   .top-nav__inner {
     max-width: 960px;
+    padding: 14px 24px;
   }
 
   body {
     padding-bottom: 0;
+  }
+}
+
+@media (min-width: 1200px) {
+  .top-nav__inner {
+    max-width: 1080px;
   }
 }
 

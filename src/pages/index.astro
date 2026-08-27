@@ -278,11 +278,19 @@ const inProgress = games.filter((g) => g.status === 'wip');
     gap: 16px;
   }
 
+  /* auto-fit ยุบคอลัมน์ที่ไม่มีการ์ดอยู่ให้เหลือ 0 แล้วดันการ์ดที่เหลือขยายเต็มแถวแทน
+     กันช่องว่างเปล่าๆ เวลามีเกมพร้อมแปะไม่พอเติมเต็มทุกคอลัมน์บนจอกว้าง */
   @media (min-width: 700px) {
     .games-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
       gap: 16px;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .games-grid {
+      gap: 20px;
     }
   }
 

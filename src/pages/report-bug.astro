@@ -162,6 +162,14 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     margin: 0 0 16px;
   }
 
+  /* ฟอร์มขั้นตอนเดียวเหมือนหน้าแปะแพตช์ — จำกัดความกว้างบนจอกว้างมากๆ กันช่องกรอกยืดจนดูแปลก */
+  @media (min-width: 1200px) {
+    #bug-form {
+      max-width: 640px;
+      margin: 0 auto;
+    }
+  }
+
   .cart + .cart {
     margin-top: 16px;
   }
