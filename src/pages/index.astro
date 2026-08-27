@@ -120,9 +120,26 @@ const inProgress = games.filter((g) => g.status === 'wip');
     background: var(--clay);
     color: #fff8e8;
     font-family: var(--font-pixel);
-    font-size: 8.5px;
+    font-size: 0.53rem;
     line-height: 1.4;
     letter-spacing: 0.02em;
+  }
+
+  /* แถบนี้แต่ก่อนใช้ font-size หน่วย px ตายตัว เลยไม่โตตามจอใหญ่เหมือนจุดอื่นในเว็บ
+     (จุดอื่นใช้ rem ซึ่งขยับตาม root font-size บนจอกว้างอัตโนมัติอยู่แล้ว)
+     พอเปลี่ยนมาใช้ rem แล้ว ยังเพิ่มขนาด+ระยะขอบเองอีกชั้นให้เข้ากับแถบที่กว้างขึ้นบนจอใหญ่ */
+  @media (min-width: 720px) {
+    .hero__strip {
+      font-size: 0.68rem;
+      padding: 12px 20px;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .hero__strip {
+      font-size: 0.78rem;
+      padding: 14px 24px;
+    }
   }
 
   .hero__body {
