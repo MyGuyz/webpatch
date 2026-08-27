@@ -2,312 +2,380 @@ import { applyPatch } from '../patcher/index.js';
 import { sha1Hex } from '../patcher/sha1.js';
 import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError, sfxCancel } from '../lib/sfx.js';
 
-const games = window.__GAMES__ ?? [];
-const preselectId = window.__PRESELECT__;
-
 const el = (id) => document.getElementById(id);
-
-const consoleSelect = el('console-select');
-const gameSelect = el('game-select');
-const gameInfo = el('game-info');
-const stepFile = el('step-file');
-const stepRun = el('step-run');
-const fileInput = el('source-file');
-const fileSummary = el('file-summary');
-const fileMsgbox = el('file-msgbox');
-const msgboxRetry = el('msgbox-retry');
-const msgboxClose = el('msgbox-close');
-const fileMsgboxOk = el('file-msgbox-ok');
-const msgboxOkBtn = el('msgbox-ok-btn');
-const msgboxOkClose = el('msgbox-ok-close');
-const applyBtn = el('apply-btn');
-const downloadBtn = el('download-btn');
-const shareBtn = el('share-btn');
-const logBox = el('log');
 
 /** ไฟล์ที่ใหญ่กว่านี้เสี่ยงแรมไม่พอบนมือถือ จึงเตือนก่อน */
 const BIG_FILE_BYTES = 300 * 1024 * 1024;
 
-let selectedGame = null;
-let sourceBytes = null;
-let sourceName = '';
+/**
+ * URL ของไฟล์ผลลัพธ์ (blob) อยู่นอก init() เพราะเว็บนี้เปลี่ยนหน้าแบบ SPA
+ * (ดู astro:page-load ด้านล่าง) เอกสารเดิมไม่ได้ถูกทิ้งตอนเปลี่ยนหน้า
+ * ถ้าไม่ปล่อยตรงนี้ตอนกลับมาหน้านี้ใหม่ blob เก่าจะค้างกินแรมไปตลอด session
+ */
 let resultUrl = null;
 
-// ── กล่อง log ─────────────────────────────────────────────
+document.addEventListener('astro:page-load', init);
 
-let logCount = 0;
+function init() {
+  const games = window.__GAMES__ ?? [];
+  const preselectId = window.__PRESELECT__;
 
-function log(message, kind = '') {
-  logCount += 1;
-  const line = document.createElement('span');
-  line.className = kind ? `log__line--${kind}` : '';
-  line.textContent = `${String(logCount).padStart(2, '0')}  ${message}\n`;
-  logBox.appendChild(line);
-  logBox.scrollTop = logBox.scrollHeight;
-}
+  const consoleSelect = el('console-select');
+  if (!consoleSelect) return; // หน้านี้ยังไม่มีเกมพร้อมให้แปะ เลยไม่มีฟอร์มให้ผูก
 
-function clearLog() {
-  logBox.textContent = '';
-  logCount = 0;
-}
+  const gameSelect = el('game-select');
+  const gameInfo = el('game-info');
+  const stepFile = el('step-file');
+  const stepRun = el('step-run');
+  const fileInput = el('source-file');
+  const fileSummary = el('file-summary');
+  const fileMsgbox = el('file-msgbox');
+  const msgboxRetry = el('msgbox-retry');
+  const msgboxClose = el('msgbox-close');
+  const fileMsgboxOk = el('file-msgbox-ok');
+  const msgboxOkBtn = el('msgbox-ok-btn');
+  const msgboxOkClose = el('msgbox-ok-close');
+  const applyBtn = el('apply-btn');
+  const downloadBtn = el('download-btn');
+  const shareBtn = el('share-btn');
+  const logBox = el('log');
 
-// ── เลือกเกม ──────────────────────────────────────────────
-
-function fillGameOptions() {
-  const consoleId = consoleSelect.value;
-  const list = consoleId
-    ? games.filter((g) => String(g.console?.id) === consoleId)
-    : games;
-
-  gameSelect.innerHTML = '<option value="">— เลือกเกม —</option>';
-  for (const game of list) {
-    const option = document.createElement('option');
-    option.value = String(game.id);
-    option.textContent = game.console ? `${game.title} (${game.console.name})` : game.title;
-    gameSelect.appendChild(option);
-  }
-}
-
-function showGame(game) {
-  selectedGame = game;
-  resetFileState();
-
-  if (game) sfxSelect();
-
-  if (!game) {
-    gameInfo.hidden = true;
-    stepFile.hidden = true;
-    stepRun.hidden = true;
-    return;
-  }
-
-  const isBeta = game.status === 'beta';
-  el('info-status').className = `tag ${isBeta ? 'tag--beta' : 'tag--ready'}`;
-  el('info-status').textContent = isBeta ? '★ BETA' : '★ READY';
-  el('info-console').textContent = game.console?.name ?? '—';
-  el('info-title').textContent = game.title;
-  el('info-desc').textContent = game.description ?? '';
-
-  const parts = [];
-  if (game.patch_version) parts.push(`แพตช์ ${game.patch_version}`);
-  if (game.patch_format) parts.push(`.${game.patch_format}`);
-  if (game.patch_updated_at) parts.push(`อัปเดต ${game.patch_updated_at}`);
-  if (game.download_count) parts.push(`📥 แปะไปแล้ว ${game.download_count.toLocaleString('th-TH')} ครั้ง`);
-  el('info-version').textContent = parts.join(' · ');
-
-  el('info-spec').textContent = game.source_spec ?? 'ไม่ได้ระบุ';
-
-  renderChangelog(game.changelog ?? []);
-
-  gameInfo.hidden = false;
-  stepFile.hidden = false;
-  stepRun.hidden = false;
-
-  clearLog();
-  log(`เลือกเกม ${game.title} แล้ว`);
-  log('รอเลือกไฟล์เกมต้นฉบับของคุณ');
-}
-
-function renderChangelog(entries) {
-  const box = el('info-changelog');
-  const list = el('info-changelog-list');
-
-  if (entries.length === 0) {
-    box.hidden = true;
-    return;
-  }
-
-  list.innerHTML = '';
-  for (const entry of entries) {
-    const item = document.createElement('div');
-    item.className = 'changelog-entry';
-
-    const head = document.createElement('p');
-    head.className = 'changelog-entry__head';
-    head.textContent = entry.released_at ? `${entry.version} · ${entry.released_at}` : entry.version;
-
-    const body = document.createElement('p');
-    body.className = 'changelog-entry__body';
-    body.textContent = entry.body;
-
-    item.append(head, body);
-    list.appendChild(item);
-  }
-
-  box.hidden = false;
-}
-
-function resetFileState() {
-  sourceBytes = null;
-  sourceName = '';
-  fileInput.value = '';
-  fileSummary.textContent = '';
-  closeMsgbox();
-  closeOkMsgbox();
-  applyBtn.disabled = true;
-  hideDownload();
-}
-
-function openMsgbox() {
-  fileMsgbox.classList.add('open');
-}
-
-function closeMsgbox() {
-  fileMsgbox.classList.remove('open');
-}
-
-function openOkMsgbox() {
-  fileMsgboxOk.classList.add('open');
-}
-
-function closeOkMsgbox() {
-  fileMsgboxOk.classList.remove('open');
-}
-
-function hideDownload() {
-  downloadBtn.hidden = true;
-  shareBtn.hidden = true;
   if (resultUrl) {
     URL.revokeObjectURL(resultUrl);
     resultUrl = null;
   }
-}
 
-// ── ตรวจไฟล์ต้นฉบับ ────────────────────────────────────────
+  let selectedGame = null;
+  let sourceBytes = null;
+  let sourceName = '';
 
-async function handleFileChosen() {
-  hideDownload();
-  closeMsgbox();
-  closeOkMsgbox();
-  const file = fileInput.files?.[0];
-  if (!file) {
+  // ── กล่อง log ─────────────────────────────────────────────
+
+  let logCount = 0;
+
+  function log(message, kind = '') {
+    logCount += 1;
+    const line = document.createElement('span');
+    line.className = kind ? `log__line--${kind}` : '';
+    line.textContent = `${String(logCount).padStart(2, '0')}  ${message}\n`;
+    logBox.appendChild(line);
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  function clearLog() {
+    logBox.textContent = '';
+    logCount = 0;
+  }
+
+  // ── เลือกเกม ──────────────────────────────────────────────
+
+  function fillGameOptions() {
+    const consoleId = consoleSelect.value;
+    const list = consoleId
+      ? games.filter((g) => String(g.console?.id) === consoleId)
+      : games;
+
+    gameSelect.innerHTML = '<option value="">— เลือกเกม —</option>';
+    for (const game of list) {
+      const option = document.createElement('option');
+      option.value = String(game.id);
+      option.textContent = game.console ? `${game.title} (${game.console.name})` : game.title;
+      gameSelect.appendChild(option);
+    }
+  }
+
+  function showGame(game) {
+    selectedGame = game;
     resetFileState();
-    return;
-  }
 
-  sourceName = file.name;
-  fileSummary.textContent = `${file.name} · ${formatSize(file.size)}`;
-  applyBtn.disabled = true;
+    if (game) sfxSelect();
 
-  if (file.size > BIG_FILE_BYTES) {
-    log(`ไฟล์ใหญ่ (${formatSize(file.size)}) อาจใช้เวลาสักพัก อย่าเพิ่งปิดแท็บนะ`);
-  }
-
-  try {
-    log('กำลังอ่านไฟล์...');
-    sourceBytes = new Uint8Array(await file.arrayBuffer());
-  } catch {
-    log('อ่านไฟล์ไม่สำเร็จ — ไฟล์อาจใหญ่เกินกว่าที่เครื่องจะไหว ลองบนคอมพิวเตอร์ดูนะ', 'error');
-    return;
-  }
-
-  if (selectedGame?.source_sha1) {
-    log('กำลังตรวจว่าไฟล์ตรงรุ่นไหม...');
-    const actual = await sha1Hex(sourceBytes);
-
-    if (actual.toLowerCase() !== selectedGame.source_sha1.toLowerCase()) {
-      sfxError();
-      log('ไฟล์นี้ไม่ตรงรุ่นที่แพตช์รองรับ', 'error');
-      log(`ที่ต้องการ: ${selectedGame.source_sha1}`, 'error');
-      log(`ไฟล์ของคุณ: ${actual}`, 'error');
-      openMsgbox();
-      sourceBytes = null;
+    if (!game) {
+      gameInfo.hidden = true;
+      stepFile.hidden = true;
+      stepRun.hidden = true;
       return;
     }
-    log('ไฟล์ตรงรุ่นที่แพตช์รองรับ', 'ok');
-    openOkMsgbox();
-  } else {
-    log('แพตช์นี้ไม่ได้ระบุลายนิ้วมือไฟล์ไว้ จึงข้ามการตรวจรุ่น');
+
+    const isBeta = game.status === 'beta';
+    el('info-status').className = `tag ${isBeta ? 'tag--beta' : 'tag--ready'}`;
+    el('info-status').textContent = isBeta ? '★ BETA' : '★ READY';
+    el('info-console').textContent = game.console?.name ?? '—';
+    el('info-title').textContent = game.title;
+    el('info-desc').textContent = game.description ?? '';
+
+    const parts = [];
+    if (game.patch_version) parts.push(`แพตช์ ${game.patch_version}`);
+    if (game.patch_format) parts.push(`.${game.patch_format}`);
+    if (game.patch_updated_at) parts.push(`อัปเดต ${game.patch_updated_at}`);
+    if (game.download_count) parts.push(`📥 แปะไปแล้ว ${game.download_count.toLocaleString('th-TH')} ครั้ง`);
+    el('info-version').textContent = parts.join(' · ');
+
+    el('info-spec').textContent = game.source_spec ?? 'ไม่ได้ระบุ';
+
+    renderChangelog(game.changelog ?? []);
+
+    gameInfo.hidden = false;
+    stepFile.hidden = false;
+    stepRun.hidden = false;
+
+    clearLog();
+    log(`เลือกเกม ${game.title} แล้ว`);
+    log('รอเลือกไฟล์เกมต้นฉบับของคุณ');
   }
 
-  applyBtn.disabled = false;
-  sfxConfirm();
-  log('พร้อมแปะแล้ว กดปุ่มด้านบนได้เลย', 'ok');
-}
+  function renderChangelog(entries) {
+    const box = el('info-changelog');
+    const list = el('info-changelog-list');
 
-// ── แปะแพตช์ ──────────────────────────────────────────────
-
-async function runPatch() {
-  if (!selectedGame || !sourceBytes) return;
-
-  applyBtn.disabled = true;
-  hideDownload();
-  const originalLabel = applyBtn.textContent;
-  applyBtn.textContent = '⏳ กำลังแปะ...';
-
-  try {
-    log('กำลังโหลดไฟล์แพตช์...');
-    const response = await fetch(`/api/patch-file/${selectedGame.id}`);
-
-    if (!response.ok) {
-      const detail = await response.text();
-      throw new Error(detail || `โหลดแพตช์ไม่สำเร็จ (${response.status})`);
+    if (entries.length === 0) {
+      box.hidden = true;
+      return;
     }
 
-    const patchBytes = new Uint8Array(await response.arrayBuffer());
-    log(`โหลดแพตช์แล้ว (${formatSize(patchBytes.length)})`);
+    list.innerHTML = '';
+    for (const entry of entries) {
+      const item = document.createElement('div');
+      item.className = 'changelog-entry';
 
-    // ยอมให้หน้าจอวาด log ก่อน เพราะขั้นถัดไปกินเวลาและบล็อกจอ
-    await nextFrame();
+      const head = document.createElement('p');
+      head.className = 'changelog-entry__head';
+      head.textContent = entry.released_at ? `${entry.version} · ${entry.released_at}` : entry.version;
 
-    log('กำลังแปะ...');
-    const result = applyPatch(sourceBytes, patchBytes, selectedGame.patch_format);
+      const body = document.createElement('p');
+      body.className = 'changelog-entry__body';
+      body.textContent = entry.body;
 
-    resultUrl = URL.createObjectURL(new Blob([result], { type: 'application/octet-stream' }));
-    downloadBtn.hidden = false;
-    downloadBtn.dataset.filename = thaiFileName(sourceName);
-    shareBtn.hidden = false;
+      item.append(head, body);
+      list.appendChild(item);
+    }
 
-    sfxSuccess();
-    log('แปะเสร็จแล้ว! กดปุ่มดาวน์โหลดด้านล่างได้เลย', 'ok');
-  } catch (error) {
-    sfxError();
-    log(error.message, 'error');
-    log('ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ', 'error');
-  } finally {
-    applyBtn.textContent = originalLabel;
-    applyBtn.disabled = false;
+    box.hidden = false;
   }
-}
 
-function downloadResult() {
-  if (!resultUrl) return;
-  sfxTick();
-  const link = document.createElement('a');
-  link.href = resultUrl;
-  link.download = downloadBtn.dataset.filename ?? 'patched.bin';
-  link.click();
-}
+  function resetFileState() {
+    sourceBytes = null;
+    sourceName = '';
+    fileInput.value = '';
+    fileSummary.textContent = '';
+    closeMsgbox();
+    closeOkMsgbox();
+    applyBtn.disabled = true;
+    hideDownload();
+  }
 
-async function shareGame() {
-  if (!selectedGame) return;
-  sfxTick();
+  function openMsgbox() {
+    fileMsgbox.classList.add('open');
+  }
 
-  const url = `${location.origin}/patch?game=${selectedGame.id}`;
-  const text = `แปะแพตช์ภาษาไทย ${selectedGame.title} ได้แล้วที่นี่`;
-  const originalLabel = shareBtn.textContent;
+  function closeMsgbox() {
+    fileMsgbox.classList.remove('open');
+  }
 
-  if (navigator.share) {
+  let okMsgboxTimer = null;
+
+  function openOkMsgbox() {
+    fileMsgboxOk.classList.add('open');
+    // ปิดเองอัตโนมัติ กันไม่ให้ป๊อปอัปยืนบล็อกปุ่ม "แปะแพตช์" ที่อยู่ข้างล่างไว้นาน
+    clearTimeout(okMsgboxTimer);
+    okMsgboxTimer = setTimeout(closeOkMsgbox, 1800);
+  }
+
+  function closeOkMsgbox() {
+    clearTimeout(okMsgboxTimer);
+    fileMsgboxOk.classList.remove('open');
+  }
+
+  function hideDownload() {
+    downloadBtn.hidden = true;
+    shareBtn.hidden = true;
+    if (resultUrl) {
+      URL.revokeObjectURL(resultUrl);
+      resultUrl = null;
+    }
+  }
+
+  // ── ตรวจไฟล์ต้นฉบับ ────────────────────────────────────────
+
+  async function handleFileChosen() {
+    hideDownload();
+    closeMsgbox();
+    closeOkMsgbox();
+    const file = fileInput.files?.[0];
+    if (!file) {
+      resetFileState();
+      return;
+    }
+
+    sourceName = file.name;
+    fileSummary.textContent = `${file.name} · ${formatSize(file.size)}`;
+    applyBtn.disabled = true;
+
+    if (file.size > BIG_FILE_BYTES) {
+      log(`ไฟล์ใหญ่ (${formatSize(file.size)}) อาจใช้เวลาสักพัก อย่าเพิ่งปิดแท็บนะ`);
+    }
+
     try {
-      await navigator.share({ title: selectedGame.title, text, url });
+      log('กำลังอ่านไฟล์...');
+      sourceBytes = new Uint8Array(await file.arrayBuffer());
     } catch {
-      // ผู้ใช้กดยกเลิกกล่องแชร์เอง ไม่ต้องแจ้งอะไรเพิ่ม
+      log('อ่านไฟล์ไม่สำเร็จ — ไฟล์อาจใหญ่เกินกว่าที่เครื่องจะไหว ลองบนคอมพิวเตอร์ดูนะ', 'error');
+      return;
     }
-    return;
+
+    if (selectedGame?.source_sha1) {
+      log('กำลังตรวจว่าไฟล์ตรงรุ่นไหม...');
+      const actual = await sha1Hex(sourceBytes);
+
+      if (actual.toLowerCase() !== selectedGame.source_sha1.toLowerCase()) {
+        sfxError();
+        log('ไฟล์นี้ไม่ตรงรุ่นที่แพตช์รองรับ', 'error');
+        log(`ที่ต้องการ: ${selectedGame.source_sha1}`, 'error');
+        log(`ไฟล์ของคุณ: ${actual}`, 'error');
+        openMsgbox();
+        sourceBytes = null;
+        return;
+      }
+      log('ไฟล์ตรงรุ่นที่แพตช์รองรับ', 'ok');
+      openOkMsgbox();
+    } else {
+      log('แพตช์นี้ไม่ได้ระบุลายนิ้วมือไฟล์ไว้ จึงข้ามการตรวจรุ่น');
+    }
+
+    applyBtn.disabled = false;
+    sfxConfirm();
+    log('พร้อมแปะแล้ว กดปุ่มด้านบนได้เลย', 'ok');
   }
 
-  try {
-    await navigator.clipboard.writeText(url);
-    shareBtn.textContent = '✓ คัดลอกลิงก์แล้ว';
-  } catch {
-    shareBtn.textContent = '⚠ คัดลอกไม่สำเร็จ ลองคัดลอกจากแถบที่อยู่เอง';
+  // ── แปะแพตช์ ──────────────────────────────────────────────
+
+  async function runPatch() {
+    if (!selectedGame || !sourceBytes) return;
+
+    applyBtn.disabled = true;
+    hideDownload();
+    const originalLabel = applyBtn.textContent;
+    applyBtn.textContent = '⏳ กำลังแปะ...';
+
+    try {
+      log('กำลังโหลดไฟล์แพตช์...');
+      const response = await fetch(`/api/patch-file/${selectedGame.id}`);
+
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail || `โหลดแพตช์ไม่สำเร็จ (${response.status})`);
+      }
+
+      const patchBytes = new Uint8Array(await response.arrayBuffer());
+      log(`โหลดแพตช์แล้ว (${formatSize(patchBytes.length)})`);
+
+      // ยอมให้หน้าจอวาด log ก่อน เพราะขั้นถัดไปกินเวลาและบล็อกจอ
+      await nextFrame();
+
+      log('กำลังแปะ...');
+      const result = applyPatch(sourceBytes, patchBytes, selectedGame.patch_format);
+
+      resultUrl = URL.createObjectURL(new Blob([result], { type: 'application/octet-stream' }));
+      downloadBtn.hidden = false;
+      downloadBtn.dataset.filename = thaiFileName(sourceName);
+      shareBtn.hidden = false;
+
+      sfxSuccess();
+      log('แปะเสร็จแล้ว! กดปุ่มดาวน์โหลดด้านล่างได้เลย', 'ok');
+    } catch (error) {
+      sfxError();
+      log(error.message, 'error');
+      log('ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ', 'error');
+    } finally {
+      applyBtn.textContent = originalLabel;
+      applyBtn.disabled = false;
+    }
   }
-  setTimeout(() => {
-    shareBtn.textContent = originalLabel;
-  }, 2000);
+
+  function downloadResult() {
+    if (!resultUrl) return;
+    sfxTick();
+    const link = document.createElement('a');
+    link.href = resultUrl;
+    link.download = downloadBtn.dataset.filename ?? 'patched.bin';
+    link.click();
+  }
+
+  async function shareGame() {
+    if (!selectedGame) return;
+    sfxTick();
+
+    const url = `${location.origin}/patch?game=${selectedGame.id}`;
+    const text = `แปะแพตช์ภาษาไทย ${selectedGame.title} ได้แล้วที่นี่`;
+    const originalLabel = shareBtn.textContent;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: selectedGame.title, text, url });
+      } catch {
+        // ผู้ใช้กดยกเลิกกล่องแชร์เอง ไม่ต้องแจ้งอะไรเพิ่ม
+      }
+      return;
+    }
+
+    try {
+      await navigator.clipboard.writeText(url);
+      shareBtn.textContent = '✓ คัดลอกลิงก์แล้ว';
+    } catch {
+      shareBtn.textContent = '⚠ คัดลอกไม่สำเร็จ ลองคัดลอกจากแถบที่อยู่เอง';
+    }
+    setTimeout(() => {
+      shareBtn.textContent = originalLabel;
+    }, 2000);
+  }
+
+  // ── เริ่มทำงาน ────────────────────────────────────────────
+
+  consoleSelect.addEventListener('change', () => {
+    fillGameOptions();
+    showGame(null);
+  });
+
+  gameSelect.addEventListener('change', () => {
+    showGame(games.find((g) => String(g.id) === gameSelect.value) ?? null);
+  });
+
+  fileInput.addEventListener('change', handleFileChosen);
+  msgboxRetry.addEventListener('click', () => {
+    sfxTick();
+    resetFileState();
+    fileInput.click();
+  });
+  msgboxClose.addEventListener('click', () => {
+    sfxCancel();
+    closeMsgbox();
+  });
+  msgboxOkBtn.addEventListener('click', () => {
+    sfxTick();
+    closeOkMsgbox();
+  });
+  msgboxOkClose.addEventListener('click', () => {
+    sfxCancel();
+    closeOkMsgbox();
+  });
+  applyBtn.addEventListener('click', runPatch);
+  downloadBtn.addEventListener('click', downloadResult);
+  shareBtn.addEventListener('click', shareGame);
+
+  fillGameOptions();
+
+  if (preselectId) {
+    const game = games.find((g) => String(g.id) === String(preselectId));
+    if (game) {
+      if (game.console) consoleSelect.value = String(game.console.id);
+      fillGameOptions();
+      gameSelect.value = String(game.id);
+      showGame(game);
+    }
+  }
 }
 
-// ── ตัวช่วย ───────────────────────────────────────────────
+// ── ตัวช่วย (ไม่ผูกกับ DOM ต่อหน้า ไม่ต้องอยู่ใน init) ──────────
 
 function thaiFileName(name) {
   const dot = name.lastIndexOf('.');
@@ -323,48 +391,3 @@ function formatSize(bytes) {
 }
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
-
-// ── เริ่มทำงาน ────────────────────────────────────────────
-
-consoleSelect.addEventListener('change', () => {
-  fillGameOptions();
-  showGame(null);
-});
-
-gameSelect.addEventListener('change', () => {
-  showGame(games.find((g) => String(g.id) === gameSelect.value) ?? null);
-});
-
-fileInput.addEventListener('change', handleFileChosen);
-msgboxRetry.addEventListener('click', () => {
-  sfxTick();
-  resetFileState();
-  fileInput.click();
-});
-msgboxClose.addEventListener('click', () => {
-  sfxCancel();
-  closeMsgbox();
-});
-msgboxOkBtn.addEventListener('click', () => {
-  sfxTick();
-  closeOkMsgbox();
-});
-msgboxOkClose.addEventListener('click', () => {
-  sfxCancel();
-  closeOkMsgbox();
-});
-applyBtn.addEventListener('click', runPatch);
-downloadBtn.addEventListener('click', downloadResult);
-shareBtn.addEventListener('click', shareGame);
-
-fillGameOptions();
-
-if (preselectId) {
-  const game = games.find((g) => String(g.id) === String(preselectId));
-  if (game) {
-    if (game.console) consoleSelect.value = String(game.console.id);
-    fillGameOptions();
-    gameSelect.value = String(game.id);
-    showGame(game);
-  }
-}

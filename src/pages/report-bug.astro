@@ -133,6 +133,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
   <script
     is:inline
+    data-astro-rerun
     define:vars={{ supabaseUrl, supabaseKey, gamesJson: JSON.stringify(gamesForClient) }}
   >
     window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };

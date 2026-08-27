@@ -3,14 +3,15 @@ import { buildBugReportPayload, explainBugReportError, formatSize } from '../lib
 import { compressImageIfNeeded } from '../lib/compress-image.js';
 import { sfxSuccess, sfxError, sfxWarn } from '../lib/sfx.js';
 
-const games = window.__GAMES__ ?? [];
-
 const el = (id) => document.getElementById(id);
 
-const form = el('bug-form');
-if (form) start();
+document.addEventListener('astro:page-load', init);
 
-function start() {
+function init() {
+  const games = window.__GAMES__ ?? [];
+  const form = el('bug-form');
+  if (!form) return;
+
   const msg = el('msg');
   const gameSelect = el('game-select');
   const versionSelect = el('version-select');

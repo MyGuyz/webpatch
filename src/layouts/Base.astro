@@ -1,4 +1,5 @@
 ---
+import { ClientRouter } from 'astro:transitions';
 import '../styles/theme.css';
 import BottomNav from '../components/BottomNav.astro';
 
@@ -33,6 +34,7 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
     <link rel="icon" href="/icon-192.png" />
     <link rel="apple-touch-icon" href="/icon-192.png" />
     <meta name="theme-color" content="#e2402a" />
+    <ClientRouter />
   </head>
   <body>
     <BottomNav />
@@ -40,9 +42,9 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
       <slot />
     </main>
 
-    <button class="help-btn" id="help-btn" aria-label="เปิดคู่มือมือใหม่">?</button>
+    <button class="help-btn" id="help-btn" aria-label="เปิดคู่มือมือใหม่" transition:persist>?</button>
 
-    <div class="overlay" id="browser-gate">
+    <div class="overlay" id="browser-gate" transition:persist>
       <div class="cart overlay__card">
         <div class="cart__label" style="background: var(--clay); color: #fff8e8;">
           <span>⚠ SYSTEM CHECK</span>
@@ -109,7 +111,7 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
       </div>
     </div>
 
-    <div class="overlay" id="guide-modal">
+    <div class="overlay" id="guide-modal" transition:persist>
       <div class="cart overlay__card">
         <div class="cart__label">
           <span>◆ คู่มือมือใหม่</span>
