@@ -12,7 +12,7 @@ import { sfxTick, sfxConfirm, sfxWarn, sfxCancel } from '../lib/sfx.js';
  * data-sfx="none" กันเสียงซ้อนกัน 2 เสียงตอนกดครั้งเดียว
  */
 const SELECTOR =
-  '.btn, .close-x, .nav__item, .top-nav__link, .top-nav__brand, .game__go, .game__cover-dl, .credit, .skip-link';
+  '.btn, .close-x, .nav__item, .top-nav__link, .top-nav__brand, .game__go, .game__cover-dl, .credit, .skip-link, .dropzone';
 
 const SOUNDS = { tick: sfxTick, confirm: sfxConfirm, warn: sfxWarn, cancel: sfxCancel };
 

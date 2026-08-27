@@ -38,17 +38,18 @@ function init() {
   const fileSummary = el('file-summary');
   const fileMsgbox = el('file-msgbox');
   const msgboxRetry = el('msgbox-retry');
-  const msgboxClose = el('msgbox-close');
+  const fileMsgboxZip = el('file-msgbox-zip');
+  const msgboxZipRetry = el('msgbox-zip-retry');
   const fileMsgboxOk = el('file-msgbox-ok');
-  const msgboxOkBtn = el('msgbox-ok-btn');
-  const msgboxOkClose = el('msgbox-ok-close');
   const applyBtn = el('apply-btn');
   const downloadBtn = el('download-btn');
   const patchDoneModal = el('patch-done-modal');
   const patchDoneClose = el('patch-done-close');
+  const patchDoneDoneBtn = el('patch-done-done-btn');
   const patchDoneCoverImg = el('patch-done-cover-img');
   const patchDoneCoverArt = patchDoneModal.querySelector('.patch-done__cover-art');
   const patchDoneTitle = el('patch-done-title');
+  const patchDoneFilename = el('patch-done-filename');
   const logBox = el('log');
 
   if (resultUrl) {
@@ -169,26 +170,17 @@ function init() {
     sourceName = '';
     fileInput.value = '';
     fileSummary.textContent = '';
-    closeMsgbox();
-    closeOkMsgbox();
+    showFileStatus('none');
     applyBtn.disabled = true;
     hideDownload();
   }
 
-  function openMsgbox() {
-    fileMsgbox.classList.add('open');
-  }
-
-  function closeMsgbox() {
-    fileMsgbox.classList.remove('open');
-  }
-
-  function openOkMsgbox() {
-    fileMsgboxOk.classList.add('open');
-  }
-
-  function closeOkMsgbox() {
-    fileMsgboxOk.classList.remove('open');
+  /** สลับกล่องสถานะไฟล์ 3 แบบ (error/zip/ok) แบบฝังอยู่ในหน้าเลย ไม่ใช่ป๊อปอัป
+     ให้เห็นทีละกล่องตามผลตรวจไฟล์ล่าสุด — ตรงกับ mockup ที่ร่างไว้ */
+  function showFileStatus(kind) {
+    fileMsgbox.hidden = kind !== 'error';
+    fileMsgboxZip.hidden = kind !== 'zip';
+    fileMsgboxOk.hidden = kind !== 'ok';
   }
 
   function hideDownload() {
@@ -203,8 +195,7 @@ function init() {
 
   async function handleFileChosen() {
     hideDownload();
-    closeMsgbox();
-    closeOkMsgbox();
+    showFileStatus('none');
     const file = fileInput.files?.[0];
     if (!file) {
       resetFileState();
@@ -227,6 +218,14 @@ function init() {
       return;
     }
 
+    if (isZipFile(sourceBytes, file.name)) {
+      sfxError();
+      log('ไฟล์นี้เป็นไฟล์บีบอัด (.zip) ยังไม่ใช่ไฟล์เกม', 'error');
+      showFileStatus('zip');
+      sourceBytes = null;
+      return;
+    }
+
     if (selectedGame?.source_sha1) {
       log('กำลังตรวจว่าไฟล์ตรงรุ่นไหม...');
       const actual = await sha1Hex(sourceBytes);
@@ -236,12 +235,12 @@ function init() {
         log('ไฟล์นี้ไม่ตรงรุ่นที่แพตช์รองรับ', 'error');
         log(`ที่ต้องการ: ${selectedGame.source_sha1}`, 'error');
         log(`ไฟล์ของคุณ: ${actual}`, 'error');
-        openMsgbox();
+        showFileStatus('error');
         sourceBytes = null;
         return;
       }
       log('ไฟล์ตรงรุ่นที่แพตช์รองรับ', 'ok');
-      openOkMsgbox();
+      showFileStatus('ok');
     } else {
       log('แพตช์นี้ไม่ได้ระบุลายนิ้วมือไฟล์ไว้ จึงข้ามการตรวจรุ่น');
     }
@@ -284,6 +283,7 @@ function init() {
       downloadBtn.dataset.filename = thaiFileName(sourceName);
 
       patchDoneTitle.textContent = selectedGame.title;
+      patchDoneFilename.textContent = thaiFileName(sourceName);
       if (selectedGame.cover_url) {
         patchDoneCoverImg.src = selectedGame.cover_url;
         patchDoneCoverImg.alt = `ปกเกม ${selectedGame.title}`;
@@ -333,22 +333,19 @@ function init() {
     resetFileState();
     fileInput.click();
   });
-  msgboxClose.addEventListener('click', () => {
-    sfxCancel();
-    closeMsgbox();
-  });
-  msgboxOkBtn.addEventListener('click', () => {
+  msgboxZipRetry.addEventListener('click', () => {
     sfxTick();
-    closeOkMsgbox();
-  });
-  msgboxOkClose.addEventListener('click', () => {
-    sfxCancel();
-    closeOkMsgbox();
+    resetFileState();
+    fileInput.click();
   });
   applyBtn.addEventListener('click', runPatch);
   downloadBtn.addEventListener('click', downloadResult);
   patchDoneClose.addEventListener('click', () => {
     sfxCancel();
+    patchDoneModal.classList.remove('open');
+  });
+  patchDoneDoneBtn.addEventListener('click', () => {
+    sfxTick();
     patchDoneModal.classList.remove('open');
   });
 
@@ -366,6 +363,21 @@ function init() {
 }
 
 // ── ตัวช่วย (ไม่ผูกกับ DOM ต่อหน้า ไม่ต้องอยู่ใน init) ──────────
+
+/** ตรวจไฟล์บีบอัด (.zip/.rar/.7z) — ดักด้วย magic bytes ก่อน (กันกรณีถูกเปลี่ยนนามสกุลไฟล์)
+   แล้วเสริมด้วยนามสกุลไฟล์ เพราะ .rar/.7z ตรวจ magic bytes ยากกว่า zip */
+function isZipFile(bytes, name) {
+  const lower = name.toLowerCase();
+  if (lower.endsWith('.zip') || lower.endsWith('.rar') || lower.endsWith('.7z')) return true;
+
+  // ลายเซ็นไฟล์ zip: "PK" ตามด้วย 0x03/0x05/0x07 (local file / empty archive / spanned archive)
+  return (
+    bytes.length >= 4 &&
+    bytes[0] === 0x50 &&
+    bytes[1] === 0x4b &&
+    (bytes[2] === 0x03 || bytes[2] === 0x05 || bytes[2] === 0x07)
+  );
+}
 
 function thaiFileName(name) {
   const dot = name.lastIndexOf('.');

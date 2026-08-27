@@ -96,66 +96,77 @@ const consolesWithGames = consoles.filter((c) =>
         <section class="cart" id="step-file" hidden>
           <div class="cart__label"><span>2 · เลือกไฟล์เกมของคุณ</span></div>
           <div class="cart__body">
-            <label class="field">
+            <div class="field">
               <span class="field__label">ไฟล์เกมต้นฉบับ</span>
-              <input type="file" id="source-file" accept="application/octet-stream" />
-            </label>
-            <p class="muted" id="file-summary"></p>
+              <input class="sr-only-file" type="file" id="source-file" accept="application/octet-stream" />
+              <label class="dropzone" for="source-file" id="dropzone-label">
+                <span class="dropzone__icon" aria-hidden="true">📁</span>
+                <span>กดเลือกไฟล์ของคุณ</span>
+              </label>
+            </div>
+            <p class="muted mono" id="file-summary"></p>
+
+            <div class="msgbox msgbox--error" id="file-msgbox" hidden>
+              <div class="msgbox__head">
+                <span class="msgbox__icon">✕</span>
+                <span>ไฟล์นี้ไม่ตรงกับที่แพตช์รองรับ</span>
+              </div>
+              <div class="msgbox__body">
+                <p>
+                  แพตช์แก้ไขข้อมูลในไฟล์ตามตำแหน่งที่ตายตัว ถ้าไฟล์ไม่ตรงกันแม้แต่ไบต์เดียว
+                  การแปะจะทำให้ไฟล์เกมพังจนเปิดเล่นไม่ได้ ระบบเลย<strong>ไม่ยอมให้กดแปะไฟล์นี้</strong>
+                  เพื่อกันไฟล์เกมของคุณเสีย
+                </p>
+                <details class="msgbox__why">
+                  <summary>▸ ทำไมถึงไม่ตรง?</summary>
+                  <ul>
+                    <li>ไฟล์เป็นคนละภาค/ประเทศ (เช่น Japan แทน USA)</li>
+                    <li>ไฟล์เคยถูกแพตช์หรือแก้ไขมาก่อนแล้ว</li>
+                    <li>ไฟล์มี header แถมมา (พบบ่อยในบางเว็บที่แจกไฟล์ .smc/.nes)</li>
+                    <li>ดาวน์โหลดมาจากคนละแหล่งที่ dump ไม่ตรงมาตรฐาน</li>
+                  </ul>
+                </details>
+                <div class="msgbox__todo">
+                  <p>ลองทำแบบนี้ดูครับ</p>
+                  <ul>
+                    <li>เช็กชื่อไฟล์ต้นฉบับที่ต้องใช้ในกล่องข้อมูลเกมด้านบนอีกครั้ง</li>
+                    <li>ลองหาไฟล์จากแหล่งอื่น (ต้องเป็นไฟล์ต้นฉบับที่ยังไม่ถูกแก้ไข)</li>
+                    <li>ลองหลายรอบแล้วไม่ได้ ไปแจ้งบั๊กบอกเราได้เลย เดี๋ยวช่วยดูให้</li>
+                  </ul>
+                </div>
+                <div class="msgbox__actions">
+                  <button class="btn btn--small" type="button" id="msgbox-retry" data-sfx="none">🔁 เลือกไฟล์ใหม่</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="msgbox msgbox--warn" id="file-msgbox-zip" hidden>
+              <div class="msgbox__head">
+                <span class="msgbox__icon">📦</span>
+                <span>นี่คือไฟล์บีบอัด ยังไม่ใช่ไฟล์เกม</span>
+              </div>
+              <div class="msgbox__body">
+                <p>
+                  ไฟล์ <code>.zip</code> / <code>.rar</code> / <code>.7z</code> ยังแปะไม่ได้ครับ ต้อง
+                  <strong>แตกไฟล์ (extract) ก่อน</strong> แล้วค่อยเลือกไฟล์เกมที่อยู่ข้างในมาแทน
+                </p>
+                <div class="msgbox__actions">
+                  <button class="btn btn--small" type="button" id="msgbox-zip-retry" data-sfx="none">🔁 เลือกไฟล์ใหม่</button>
+                </div>
+              </div>
+            </div>
+
+            <div class="msgbox msgbox--ok" id="file-msgbox-ok" hidden>
+              <div class="msgbox__head">
+                <span class="msgbox__icon">✓</span>
+                <span>ไฟล์นี้ใช้ได้</span>
+              </div>
+              <div class="msgbox__body">
+                <p>ไฟล์ตรงกับที่แพตช์รองรับพอดี กดปุ่ม <strong>"✨ แปะแพตช์ภาษาไทย"</strong> ด้านล่างเพื่อแปะได้เลย</p>
+              </div>
+            </div>
           </div>
         </section>
-
-        <div class="overlay" id="file-msgbox">
-          <div class="msgbox msgbox--error overlay__card">
-            <div class="msgbox__head">
-              <span class="msgbox__icon">✕</span>
-              <span>ไฟล์นี้ไม่ตรงกับที่แพตช์รองรับ</span>
-              <button class="close-x" id="msgbox-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
-            </div>
-            <div class="msgbox__body">
-              <p>
-                แพตช์แก้ไขข้อมูลในไฟล์ตามตำแหน่งที่ตายตัว ถ้าไฟล์ไม่ตรงกันแม้แต่ไบต์เดียว
-                การแปะจะทำให้ไฟล์เกมพังจนเปิดเล่นไม่ได้ ระบบเลย<strong>ไม่ยอมให้กดแปะไฟล์นี้</strong>
-                เพื่อกันไฟล์เกมของคุณเสีย
-              </p>
-              <details class="msgbox__why">
-                <summary>▸ ทำไมถึงไม่ตรง?</summary>
-                <ul>
-                  <li>ไฟล์เป็นคนละภาค/ประเทศ (เช่น Japan แทน USA)</li>
-                  <li>ไฟล์เคยถูกแพตช์หรือแก้ไขมาก่อนแล้ว</li>
-                  <li>ไฟล์มี header แถมมา (พบบ่อยในบางเว็บที่แจกไฟล์ .smc/.nes)</li>
-                  <li>ดาวน์โหลดมาจากคนละแหล่งที่ dump ไม่ตรงมาตรฐาน</li>
-                </ul>
-              </details>
-              <div class="msgbox__todo">
-                <p>ลองทำแบบนี้ดูครับ</p>
-                <ul>
-                  <li>เช็กชื่อไฟล์ต้นฉบับที่ต้องใช้ในกล่องข้อมูลเกมด้านบนอีกครั้ง</li>
-                  <li>ลองหาไฟล์จากแหล่งอื่น (ต้องเป็นไฟล์ต้นฉบับที่ยังไม่ถูกแก้ไข)</li>
-                  <li>ลองหลายรอบแล้วไม่ได้ ไปแจ้งบั๊กบอกเราได้เลย เดี๋ยวช่วยดูให้</li>
-                </ul>
-              </div>
-              <div class="msgbox__actions">
-                <button class="btn btn--small" type="button" id="msgbox-retry" data-sfx="none">🔁 เลือกไฟล์ใหม่</button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="overlay" id="file-msgbox-ok">
-          <div class="msgbox msgbox--ok overlay__card">
-            <div class="msgbox__head">
-              <span class="msgbox__icon">✓</span>
-              <span>ไฟล์นี้ใช้ได้</span>
-              <button class="close-x" id="msgbox-ok-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
-            </div>
-            <div class="msgbox__body">
-              <p>ไฟล์ตรงกับที่แพตช์รองรับพอดี กดปุ่ม <strong>"✨ แปะแพตช์ภาษาไทย"</strong> ด้านล่างเพื่อแปะได้เลย</p>
-              <div class="msgbox__actions">
-                <button class="btn btn--small btn--primary" type="button" id="msgbox-ok-btn" data-sfx="none">✓ เข้าใจแล้ว</button>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <section class="cart" id="step-run" hidden>
           <div class="cart__label"><span>3 · แปะแล้วดาวน์โหลด</span></div>
@@ -166,21 +177,61 @@ const consolesWithGames = consoles.filter((c) =>
         </section>
 
         <div class="overlay" id="patch-done-modal">
-          <div class="msgbox msgbox--ok overlay__card">
-            <div class="msgbox__head">
-              <span class="msgbox__icon">✓</span>
-              <span>แปะแพตช์เสร็จแล้ว!</span>
+          <div class="cart overlay__card">
+            <div class="cart__label" style="background: var(--teal); color: #f3fff0;">
+              <span>✓ แปะแพตช์เสร็จแล้ว!</span>
               <button class="close-x" id="patch-done-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
             </div>
-            <div class="msgbox__body">
+            <div class="cart__body">
               <div class="patch-done__cover">
                 <img id="patch-done-cover-img" alt="" hidden />
                 <PixelIcon name="patch" class="patch-done__cover-art" />
               </div>
               <p class="patch-done__title" id="patch-done-title"></p>
-              <div class="msgbox__actions">
-                <button class="btn btn--primary" id="download-btn" data-sfx="none">↓ ดาวน์โหลดไฟล์ภาษาไทย</button>
+
+              <button class="btn btn--primary" id="download-btn" data-sfx="none">↓ ดาวน์โหลดไฟล์ภาษาไทย</button>
+
+              <div class="patch-done__guide">
+                <h3>🎮 เปิดเล่นยังไง?</h3>
+                <p class="muted">อ่านตรงนี้ก่อนไปเปิดเกมเล่น กันเปิดผิดไฟล์</p>
+
+                <div class="stage">
+                  <div class="stage__no">FILE</div>
+                  <div class="stage__body">
+                    <h4>ไฟล์ที่ได้คือ</h4>
+                    <p class="mono" id="patch-done-filename"></p>
+                    <p>สังเกตคำว่า <strong>_TH</strong> ต่อท้ายชื่อไฟล์เดิม — นี่คือไฟล์ภาษาไทยที่แปะเรียบร้อยแล้ว</p>
+                  </div>
+                </div>
+
+                <div class="stage">
+                  <div class="stage__no">STAGE<br />1</div>
+                  <div class="stage__body">
+                    <h4>ไฟล์อยู่ในเครื่องคุณแล้ว</h4>
+                    <p>กดปุ่มดาวน์โหลดด้านบน แล้วไฟล์จะไปอยู่ในโฟลเดอร์ "Downloads" ของเครื่องคุณ</p>
+                  </div>
+                </div>
+
+                <div class="stage">
+                  <div class="stage__no">STAGE<br />2</div>
+                  <div class="stage__body">
+                    <h4>เปิดด้วยโปรแกรมเดิม</h4>
+                    <p>ใช้โปรแกรมจำลองเครื่อง (emulator) ตัวเดียวกับที่คุณใช้เล่นเกมนี้อยู่แล้ว เปิดไฟล์ที่ดาวน์โหลดมา</p>
+                  </div>
+                </div>
+
+                <div class="note" style="text-align: left;">
+                  <p style="margin: 0 0 8px; font-weight: 600;">⚠ เปิดผิดไฟล์บ่อยที่สุด</p>
+                  <p style="margin: 0;">
+                    หลายคนเผลอไปเปิดไฟล์ต้นฉบับ (ไม่มี _TH) แล้วงงว่าทำไมยังเป็นภาษาอังกฤษอยู่ —
+                    เช็คชื่อไฟล์ให้ชัวร์ก่อนเปิดเล่นนะครับ
+                  </p>
+                </div>
               </div>
+
+              <button class="btn btn--primary" id="patch-done-done-btn" type="button" data-sfx="none">
+                เข้าใจแล้ว เล่นได้เลย →
+              </button>
             </div>
           </div>
         </div>
@@ -275,15 +326,87 @@ const consolesWithGames = consoles.filter((c) =>
     white-space: pre-line;
   }
 
-  input[type='file'] {
+  /* ซ่อน input[type=file] จริงไว้ (แต่ยังคลิกได้ผ่าน label for=) เพราะปุ่ม native
+     "Choose File" ของแต่ละเบราว์เซอร์หน้าตาไม่เข้าธีมและปรับแต่งเองไม่ได้ */
+  .sr-only-file {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .dropzone {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
     width: 100%;
-    padding: 11px;
+    padding: 22px;
     background: var(--surface-sunken);
     border: 2px dashed var(--edge);
     border-radius: var(--radius-sm);
     color: var(--ink);
-    font-family: inherit;
-    font-size: 0.9rem;
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: background 0.1s ease;
+  }
+
+  .dropzone:hover {
+    background: var(--amber-wash);
+  }
+
+  .sr-only-file:focus-visible + .dropzone {
+    outline: 3px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  .dropzone__icon {
+    font-size: 1.3rem;
+  }
+
+  #file-summary {
+    margin-top: 10px;
+  }
+
+  #file-msgbox,
+  #file-msgbox-zip,
+  #file-msgbox-ok {
+    margin-top: 12px;
+  }
+
+  .patch-done__guide {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 2px dotted var(--edge);
+  }
+
+  .patch-done__guide h3 {
+    margin: 0 0 4px;
+    font-size: 1.05rem;
+  }
+
+  .patch-done__guide > p.muted {
+    margin: 0 0 14px;
+  }
+
+  .patch-done__guide .note {
+    margin-top: 4px;
+  }
+
+  #patch-done-filename {
+    margin: 2px 0 6px;
+    word-break: break-all;
+  }
+
+  #patch-done-done-btn {
+    margin-top: 16px;
   }
 
   .patch-done__cover {
