@@ -531,6 +531,7 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
 
 .close-x {
   flex: none;
+  margin-left: auto;
   width: 26px;
   height: 26px;
   border: 2px solid var(--edge);

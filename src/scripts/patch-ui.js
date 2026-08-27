@@ -1,6 +1,6 @@
 import { applyPatch } from '../patcher/index.js';
 import { sha1Hex } from '../patcher/sha1.js';
-import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError } from '../lib/sfx.js';
+import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError, sfxCancel } from '../lib/sfx.js';
 
 const games = window.__GAMES__ ?? [];
 const preselectId = window.__PRESELECT__;
@@ -16,6 +16,10 @@ const fileInput = el('source-file');
 const fileSummary = el('file-summary');
 const fileMsgbox = el('file-msgbox');
 const msgboxRetry = el('msgbox-retry');
+const msgboxClose = el('msgbox-close');
+const fileMsgboxOk = el('file-msgbox-ok');
+const msgboxOkBtn = el('msgbox-ok-btn');
+const msgboxOkClose = el('msgbox-ok-close');
 const applyBtn = el('apply-btn');
 const downloadBtn = el('download-btn');
 const shareBtn = el('share-btn');
@@ -138,9 +142,26 @@ function resetFileState() {
   sourceName = '';
   fileInput.value = '';
   fileSummary.textContent = '';
-  fileMsgbox.hidden = true;
+  closeMsgbox();
+  closeOkMsgbox();
   applyBtn.disabled = true;
   hideDownload();
+}
+
+function openMsgbox() {
+  fileMsgbox.classList.add('open');
+}
+
+function closeMsgbox() {
+  fileMsgbox.classList.remove('open');
+}
+
+function openOkMsgbox() {
+  fileMsgboxOk.classList.add('open');
+}
+
+function closeOkMsgbox() {
+  fileMsgboxOk.classList.remove('open');
 }
 
 function hideDownload() {
@@ -156,7 +177,8 @@ function hideDownload() {
 
 async function handleFileChosen() {
   hideDownload();
-  fileMsgbox.hidden = true;
+  closeMsgbox();
+  closeOkMsgbox();
   const file = fileInput.files?.[0];
   if (!file) {
     resetFileState();
@@ -188,11 +210,12 @@ async function handleFileChosen() {
       log('ไฟล์นี้ไม่ตรงรุ่นที่แพตช์รองรับ', 'error');
       log(`ที่ต้องการ: ${selectedGame.source_sha1}`, 'error');
       log(`ไฟล์ของคุณ: ${actual}`, 'error');
-      fileMsgbox.hidden = false;
+      openMsgbox();
       sourceBytes = null;
       return;
     }
     log('ไฟล์ตรงรุ่นที่แพตช์รองรับ', 'ok');
+    openOkMsgbox();
   } else {
     log('แพตช์นี้ไม่ได้ระบุลายนิ้วมือไฟล์ไว้ จึงข้ามการตรวจรุ่น');
   }
@@ -317,6 +340,18 @@ msgboxRetry.addEventListener('click', () => {
   sfxTick();
   resetFileState();
   fileInput.click();
+});
+msgboxClose.addEventListener('click', () => {
+  sfxCancel();
+  closeMsgbox();
+});
+msgboxOkBtn.addEventListener('click', () => {
+  sfxTick();
+  closeOkMsgbox();
+});
+msgboxOkClose.addEventListener('click', () => {
+  sfxCancel();
+  closeOkMsgbox();
 });
 applyBtn.addEventListener('click', runPatch);
 downloadBtn.addEventListener('click', downloadResult);
