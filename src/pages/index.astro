@@ -140,16 +140,20 @@ const inProgress = games.filter((g) => g.status === 'wip');
     }
   }
 
+  /* พื้นหลังฉากเกมพิกเซล — ตั้งใจเว้นแถบกลางโล่งไว้ให้ข้อความอ่านง่าย
+     ใช้รูปแนวตั้ง (mobile-bg) เป็นค่าเริ่มต้น แล้วสลับเป็นรูปแนวนอน (desktop-bg)
+     ที่จอกว้างขึ้น เพราะรูปเดียวกันครอบตัด (cover) แล้วสัดส่วนจะไม่พอดีทั้งสองแบบ */
   .hero__body {
     padding: 30px 20px 34px;
     text-align: center;
+    background: var(--surface) url('/img/hero-bg-mobile.jpg') center/cover no-repeat;
   }
 
-  /* เอาไอคอนมาสคอตออกแล้ว (รอรูปใหม่) เลยกลับไปจัดกลางแบบเดียวกับมือถือ
-     แค่ขยายระยะขอบ+ความกว้าง+ตัวหนังสือขึ้นให้เข้ากับจอที่กว้างขึ้น */
   @media (min-width: 720px) {
     .hero__body {
       padding: 48px 40px;
+      background-image: url('/img/hero-bg-desktop.jpg');
+      min-height: 400px;
     }
 
     .hero__text {
