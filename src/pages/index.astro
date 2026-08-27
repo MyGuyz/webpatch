@@ -56,7 +56,7 @@ const inProgress = games.filter((g) => g.status === 'wip');
     }
 
     <section>
-      <h2 class="section-head">ผลงานล่าสุด</h2>
+      <h2 class="section-head">เกมที่พร้อมให้แปะ</h2>
       {
         ready.length === 0 ? (
           <p class="muted">ยังไม่มีเกมที่พร้อมให้แปะ รอติดตามนะครับ</p>
@@ -104,9 +104,9 @@ const inProgress = games.filter((g) => g.status === 'wip');
     <p class="build-stamp muted">เว็บชุดนี้ build เมื่อ {__BUILD_TIME__}</p>
 
     <p class="note note--privacy">
-      🔒 เว็บนี้แจกเฉพาะ<strong>ไฟล์แพตช์</strong> ไม่ได้แจกตัวเกม
-      คุณต้องมีไฟล์เกมต้นฉบับของคุณเอง และไฟล์นั้นจะอยู่ในเครื่องคุณตลอด
-      ไม่ถูกอัปโหลดขึ้นเซิร์ฟเวอร์
+      🔒 สิ่งที่แจกจากเว็บนี้มีแค่<strong>ไฟล์แพตช์</strong>อย่างเดียว ไม่มีตัวเกมให้โหลด
+      ผู้เล่นต้องเตรียมไฟล์เกมต้นฉบับของตัวเองไว้ก่อน
+      และไฟล์นั้นจะไม่ถูกส่งออกจากเครื่องไปไหนทั้งนั้น
     </p>
   </div>
 </Base>

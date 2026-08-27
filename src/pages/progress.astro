@@ -9,8 +9,8 @@ const inProgress = games.filter((g) => g.status === 'wip');
 <Base title="กำลังทำอยู่ — เกมไทย" description="ดูความคืบหน้าของเกมที่กำลังแปลอยู่">
   <h1 class="page-head">กำลังทำอยู่</h1>
   <p class="muted lead">
-    เกมที่ตัดสินใจลงมือแล้ว — ดูได้เลยว่าตอนนี้แต่ละเกมเดินมาถึงขั้นไหน
-    พอครบทั้ง 5 ขั้นก็จะย้ายไปอยู่หน้าแปะแพตช์
+    เกมที่กำลังแปลอยู่ตอนนี้ พร้อมบอกว่าถึงขั้นตอนไหนแล้วของทั้งหมด 5 ขั้น
+    เสร็จเมื่อไหร่จะย้ายไปโผล่ในหน้าแปะแพตช์ทันที
   </p>
 
   {
@@ -32,7 +32,7 @@ const inProgress = games.filter((g) => g.status === 'wip');
               <div class="bar" role="img" aria-label={`คืบหน้า ${game.progress_percent}%`}>
                 <div class="bar__fill" style={`width:${game.progress_percent}%`}></div>
               </div>
-              <p class="muted percent">งานแปล {game.progress_percent}%</p>
+              <p class="muted percent">แปลไปแล้ว {game.progress_percent}%</p>
             </div>
           </article>
         ))}

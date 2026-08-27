@@ -62,7 +62,7 @@ export const SEED_GAMES = [
     console: SEED_CONSOLES[2],
     status: 'wip',
     cover_url: null,
-    description: 'กำลังไล่เทสบทสนทนายาวๆ ว่าตกกรอบไหม',
+    description: 'อยู่ระหว่างตรวจบทพูดยาวๆ ในเกมว่ามีตัวอักษรล้นกรอบข้อความหรือเปล่า',
     patch_version: null,
     patch_format: 'ppf',
     patch_url: null,
@@ -77,5 +77,5 @@ export const SEED_GAMES = [
 ];
 
 export const SEED_ANNOUNCEMENT = {
-  body: 'ยินดีต้อนรับสู่บ้านของเรา ติดตามข่าวเกมภาษาไทยและผลงานใหม่ๆ เร็วๆ นี้ครับ',
+  body: 'เว็บนี้เพิ่งเริ่มต้น กำลังทยอยเพิ่มเกมและอัปเดตใหม่ๆ เข้ามาเรื่อยๆ แวะมาดูอีกทีได้นะครับ',
 };
