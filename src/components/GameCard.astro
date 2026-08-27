@@ -40,6 +40,13 @@ const details = [
 
     {game.patch_version && <p class="game__meta">PATCH {game.patch_version}</p>}
     {details.length > 0 && <p class="muted game__details">{details.join(' · ')}</p>}
+    {
+      game.cover_url && (
+        <a class="game__cover-dl" href={game.cover_url} download target="_blank" rel="noopener">
+          ⬇ ดาวน์โหลดภาพปก
+        </a>
+      )
+    }
 
     <div class="game__spacer" />
 
@@ -117,6 +124,14 @@ const details = [
 
   .game__details {
     margin: 6px 0 0;
+  }
+
+  .game__cover-dl {
+    display: inline-block;
+    margin: 8px 0 0;
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+    text-decoration: underline;
   }
 
   /* ดันปุ่มลงล่างสุดของการ์ดเสมอ ไม่ว่าข้อความด้านบนจะยาวแค่ไหน

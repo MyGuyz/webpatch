@@ -1,10 +1,15 @@
 import { getSupabase, showMessage, hideMessage } from '../lib/admin-client.js';
 import { buildGamePayload, explainSaveError } from '../lib/game-form.js';
+import { compressImageIfNeeded } from '../lib/compress-image.js';
 
 const form = document.getElementById('game-form');
 const msg = document.getElementById('msg');
 const saveBtn = document.getElementById('save');
 const pageHead = document.getElementById('page-head');
+
+const coverInput = document.getElementById('cover-input');
+const coverPreview = document.getElementById('cover-preview');
+const coverErr = form.querySelector('[data-err="cover"]');
 
 const changelogSection = document.getElementById('changelog-section');
 const changelogList = document.getElementById('changelog-list');
@@ -57,8 +62,45 @@ async function loadGame() {
     if (field.type === 'checkbox') field.checked = Boolean(value);
     else field.value = value ?? '';
   }
+
+  if (data.cover_url) showCoverPreview(data.cover_url);
   return true;
 }
+
+// ── ภาพปก ────────────────────────────────────────────────
+
+function showCoverPreview(url) {
+  coverPreview.src = url;
+  coverPreview.hidden = false;
+}
+
+coverInput.addEventListener('change', async () => {
+  const file = coverInput.files?.[0];
+  if (!file) return;
+
+  coverErr.textContent = '';
+  coverInput.disabled = true;
+
+  try {
+    const compressed = await compressImageIfNeeded(file);
+    const safeName = compressed.name.replace(/[^a-zA-Z0-9.-]/g, '_');
+    const path = `${crypto.randomUUID()}-${safeName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from('game-covers')
+      .upload(path, compressed, { contentType: compressed.type });
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage.from('game-covers').getPublicUrl(path);
+    form.elements.cover_url.value = data.publicUrl;
+    showCoverPreview(data.publicUrl);
+  } catch (error) {
+    coverErr.textContent = `อัปโหลดไม่สำเร็จ: ${error.message}`;
+  } finally {
+    coverInput.disabled = false;
+    coverInput.value = '';
+  }
+});
 
 // ── บันทึก ────────────────────────────────────────────────
 
