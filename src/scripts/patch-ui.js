@@ -37,7 +37,11 @@ function init() {
   const msgboxOkClose = el('msgbox-ok-close');
   const applyBtn = el('apply-btn');
   const downloadBtn = el('download-btn');
-  const shareBtn = el('share-btn');
+  const patchDoneModal = el('patch-done-modal');
+  const patchDoneClose = el('patch-done-close');
+  const patchDoneCoverImg = el('patch-done-cover-img');
+  const patchDoneCoverArt = patchDoneModal.querySelector('.patch-done__cover-art');
+  const patchDoneTitle = el('patch-done-title');
   const logBox = el('log');
 
   if (resultUrl) {
@@ -172,23 +176,16 @@ function init() {
     fileMsgbox.classList.remove('open');
   }
 
-  let okMsgboxTimer = null;
-
   function openOkMsgbox() {
     fileMsgboxOk.classList.add('open');
-    // ปิดเองอัตโนมัติ กันไม่ให้ป๊อปอัปยืนบล็อกปุ่ม "แปะแพตช์" ที่อยู่ข้างล่างไว้นาน
-    clearTimeout(okMsgboxTimer);
-    okMsgboxTimer = setTimeout(closeOkMsgbox, 1800);
   }
 
   function closeOkMsgbox() {
-    clearTimeout(okMsgboxTimer);
     fileMsgboxOk.classList.remove('open');
   }
 
   function hideDownload() {
-    downloadBtn.hidden = true;
-    shareBtn.hidden = true;
+    patchDoneModal.classList.remove('open');
     if (resultUrl) {
       URL.revokeObjectURL(resultUrl);
       resultUrl = null;
@@ -276,12 +273,22 @@ function init() {
       const result = applyPatch(sourceBytes, patchBytes, selectedGame.patch_format);
 
       resultUrl = URL.createObjectURL(new Blob([result], { type: 'application/octet-stream' }));
-      downloadBtn.hidden = false;
       downloadBtn.dataset.filename = thaiFileName(sourceName);
-      shareBtn.hidden = false;
+
+      patchDoneTitle.textContent = selectedGame.title;
+      if (selectedGame.cover_url) {
+        patchDoneCoverImg.src = selectedGame.cover_url;
+        patchDoneCoverImg.alt = `ปกเกม ${selectedGame.title}`;
+        patchDoneCoverImg.hidden = false;
+        patchDoneCoverArt.hidden = true;
+      } else {
+        patchDoneCoverImg.hidden = true;
+        patchDoneCoverArt.hidden = false;
+      }
+      patchDoneModal.classList.add('open');
 
       sfxSuccess();
-      log('แปะเสร็จแล้ว! กดปุ่มดาวน์โหลดด้านล่างได้เลย', 'ok');
+      log('แปะเสร็จแล้ว! กดปุ่มดาวน์โหลดในป๊อปอัปได้เลย', 'ok');
     } catch (error) {
       sfxError();
       log(error.message, 'error');
@@ -299,34 +306,6 @@ function init() {
     link.href = resultUrl;
     link.download = downloadBtn.dataset.filename ?? 'patched.bin';
     link.click();
-  }
-
-  async function shareGame() {
-    if (!selectedGame) return;
-    sfxTick();
-
-    const url = `${location.origin}/patch?game=${selectedGame.id}`;
-    const text = `แปะแพตช์ภาษาไทย ${selectedGame.title} ได้แล้วที่นี่`;
-    const originalLabel = shareBtn.textContent;
-
-    if (navigator.share) {
-      try {
-        await navigator.share({ title: selectedGame.title, text, url });
-      } catch {
-        // ผู้ใช้กดยกเลิกกล่องแชร์เอง ไม่ต้องแจ้งอะไรเพิ่ม
-      }
-      return;
-    }
-
-    try {
-      await navigator.clipboard.writeText(url);
-      shareBtn.textContent = '✓ คัดลอกลิงก์แล้ว';
-    } catch {
-      shareBtn.textContent = '⚠ คัดลอกไม่สำเร็จ ลองคัดลอกจากแถบที่อยู่เอง';
-    }
-    setTimeout(() => {
-      shareBtn.textContent = originalLabel;
-    }, 2000);
   }
 
   // ── เริ่มทำงาน ────────────────────────────────────────────
@@ -360,7 +339,10 @@ function init() {
   });
   applyBtn.addEventListener('click', runPatch);
   downloadBtn.addEventListener('click', downloadResult);
-  shareBtn.addEventListener('click', shareGame);
+  patchDoneClose.addEventListener('click', () => {
+    sfxCancel();
+    patchDoneModal.classList.remove('open');
+  });
 
   fillGameOptions();
 

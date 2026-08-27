@@ -2,10 +2,14 @@
 
 let audioCtx = null;
 
-function beep(freqs, duration, type, peakGain) {
+async function beep(freqs, duration, type, peakGain) {
   try {
-    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    if (audioCtx.state === 'suspended') audioCtx.resume();
+    // เบราว์เซอร์บางตัว (โดยเฉพาะ iOS Safari) ปิดกั้นเสียงเงียบๆ ถ้าเริ่มเล่นก่อน resume()
+    // เสร็จจริง — ต้องรอ resume() ให้จบก่อนค่อยสร้างเสียง ไม่งั้นจะไม่มีเสียงออกมาเลยแม้โค้ดจะรันผ่านปกติ
+    if (!audioCtx || audioCtx.state === 'closed') {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    if (audioCtx.state === 'suspended') await audioCtx.resume();
 
     const t = audioCtx.currentTime;
     const osc = audioCtx.createOscillator();

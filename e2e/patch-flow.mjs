@@ -42,6 +42,10 @@ const browser = await chromium.launch(
 );
 const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
 
+// ข้ามคู่มือมือใหม่ที่เด้งขึ้นอัตโนมัติ 500ms หลังโหลดหน้า ไม่งั้นมันจะมาบังปุ่มต่างๆ
+// ระหว่างเทสต์วิ่งเร็วกว่าคนจริงกดเยอะ
+await context.addInitScript(() => localStorage.setItem('webpatchGuideSeen', '1'));
+
 // เน็ตในเครื่องทดสอบเข้า Google Fonts ไม่ได้ ตัดทิ้งไปเลยจะได้ไม่ค้างรอ
 await context.route('https://fonts.googleapis.com/**', (route) => route.abort());
 await context.route('https://fonts.gstatic.com/**', (route) => route.abort());
@@ -67,7 +71,7 @@ await check('แสดงเกมที่พร้อมให้แปะ', a
 });
 
 await check('บอกผู้ใช้ว่าไฟล์เกมไม่ถูกอัปโหลด', async () => {
-  assert.ok(await page.getByText(/ไม่ถูกอัปโหลดขึ้นเซิร์ฟเวอร์/).first().isVisible());
+  assert.ok(await page.getByText(/ไม่ถูกส่งออกจากเครื่อง/).first().isVisible());
 });
 
 await check('เมนูล่างพาไปหน้าอื่นได้ครบ ไม่มีลิงก์ตาย', async () => {
@@ -111,13 +115,19 @@ await check('ปฏิเสธไฟล์ผิดรุ่น และไม
   assert.ok(await page.locator('#apply-btn').isDisabled(), 'ปุ่มแปะต้องยังกดไม่ได้');
 });
 
-await check('รับไฟล์ที่ตรงรุ่น แล้วเปิดให้กดแปะ', async () => {
+await check('รับไฟล์ที่ตรงรุ่น เด้งป๊อปอัปแจ้งว่าไฟล์ใช้ได้', async () => {
   await page.setInputFiles('#source-file', {
     name: 'bahamut.sfc',
     mimeType: 'application/octet-stream',
     buffer: SOURCE,
   });
   await page.waitForFunction(() => document.getElementById('log').textContent.includes('พร้อมแปะแล้ว'));
+  assert.ok(await page.locator('#file-msgbox-ok').evaluate((el) => el.classList.contains('open')));
+});
+
+await check('กดเข้าใจแล้วปิดป๊อปอัป แล้วปุ่มแปะกดได้', async () => {
+  await page.click('#msgbox-ok-btn');
+  await page.locator('#file-msgbox-ok:not(.open)').waitFor({ state: 'attached' });
   assert.ok(await page.locator('#apply-btn').isEnabled());
 });
 
@@ -125,10 +135,16 @@ await check('ปุ่มดาวน์โหลดยังไม่โผล�
   assert.equal(await page.locator('#download-btn').isVisible(), false);
 });
 
-await check('แปะแพตช์ในเบราว์เซอร์แล้วได้ปุ่มดาวน์โหลด', async () => {
+await check('แปะแพตช์ในเบราว์เซอร์แล้วเด้งป๊อปอัปพร้อมปุ่มดาวน์โหลด', async () => {
   await page.click('#apply-btn');
-  await page.locator('#download-btn').waitFor({ state: 'visible', timeout: 15000 });
+  await page.locator('#patch-done-modal.open').waitFor({ state: 'attached', timeout: 15000 });
+  await page.locator('#download-btn').waitFor({ state: 'visible' });
   assert.match(await page.locator('#log').textContent(), /แปะเสร็จแล้ว/);
+  assert.match(await page.locator('#patch-done-title').textContent(), /Bahamut Lagoon/);
+});
+
+await check('ไม่มีปุ่มแชร์อีกต่อไป', async () => {
+  assert.equal(await page.locator('#share-btn').count(), 0);
 });
 
 await check('ไฟล์ที่ดาวน์โหลดถูกต้องทุกไบต์ และตั้งชื่อลงท้าย _TH', async () => {
