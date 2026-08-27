@@ -34,7 +34,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
           <span class="field__label">รหัสผ่าน</span>
           <input type="password" id="password" autocomplete="current-password" required />
         </label>
-        <button class="btn btn--primary" type="submit" id="signin-btn">เข้าสู่ระบบ</button>
+        <button class="btn btn--primary" type="submit" id="signin-btn" data-sfx="confirm">เข้าสู่ระบบ</button>
       </form>
       <p class="msg" id="signin-msg" hidden></p>
     </div>
@@ -43,7 +43,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
   <div id="workspace" hidden>
     <div class="whoami">
       <span class="muted" id="whoami-text"></span>
-      <button class="btn btn--ghost btn--small" id="signout">ออกจากระบบ</button>
+      <button class="btn btn--ghost btn--small" id="signout" data-sfx="cancel">ออกจากระบบ</button>
     </div>
 
     <p class="msg" id="list-msg" hidden></p>

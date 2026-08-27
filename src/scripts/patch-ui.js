@@ -249,6 +249,7 @@ function init() {
   async function runPatch() {
     if (!selectedGame || !sourceBytes) return;
 
+    sfxConfirm();
     applyBtn.disabled = true;
     hideDownload();
     const originalLabel = applyBtn.textContent;

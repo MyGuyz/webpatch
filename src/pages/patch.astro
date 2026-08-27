@@ -109,7 +109,7 @@ const consolesWithGames = consoles.filter((c) =>
             <div class="msgbox__head">
               <span class="msgbox__icon">✕</span>
               <span>ไฟล์นี้ไม่ตรงกับที่แพตช์รองรับ</span>
-              <button class="close-x" id="msgbox-close" type="button" aria-label="ปิด">X</button>
+              <button class="close-x" id="msgbox-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
             </div>
             <div class="msgbox__body">
               <p>
@@ -135,7 +135,7 @@ const consolesWithGames = consoles.filter((c) =>
                 </ul>
               </div>
               <div class="msgbox__actions">
-                <button class="btn btn--small" type="button" id="msgbox-retry">🔁 เลือกไฟล์ใหม่</button>
+                <button class="btn btn--small" type="button" id="msgbox-retry" data-sfx="none">🔁 เลือกไฟล์ใหม่</button>
               </div>
             </div>
           </div>
@@ -146,12 +146,12 @@ const consolesWithGames = consoles.filter((c) =>
             <div class="msgbox__head">
               <span class="msgbox__icon">✓</span>
               <span>ไฟล์นี้ใช้ได้</span>
-              <button class="close-x" id="msgbox-ok-close" type="button" aria-label="ปิด">X</button>
+              <button class="close-x" id="msgbox-ok-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
             </div>
             <div class="msgbox__body">
               <p>ไฟล์ตรงกับที่แพตช์รองรับพอดี กดปุ่ม <strong>"✨ แปะแพตช์ภาษาไทย"</strong> ด้านล่างเพื่อแปะได้เลย</p>
               <div class="msgbox__actions">
-                <button class="btn btn--small btn--primary" type="button" id="msgbox-ok-btn">✓ เข้าใจแล้ว</button>
+                <button class="btn btn--small btn--primary" type="button" id="msgbox-ok-btn" data-sfx="none">✓ เข้าใจแล้ว</button>
               </div>
             </div>
           </div>
@@ -160,7 +160,7 @@ const consolesWithGames = consoles.filter((c) =>
         <section class="cart" id="step-run" hidden>
           <div class="cart__label"><span>3 · แปะแล้วดาวน์โหลด</span></div>
           <div class="cart__body stack">
-            <button class="btn btn--primary" id="apply-btn" disabled>✨ แปะแพตช์ภาษาไทย</button>
+            <button class="btn btn--primary" id="apply-btn" disabled data-sfx="none">✨ แปะแพตช์ภาษาไทย</button>
             <pre class="log" id="log" aria-live="polite"></pre>
           </div>
         </section>
@@ -170,7 +170,7 @@ const consolesWithGames = consoles.filter((c) =>
             <div class="msgbox__head">
               <span class="msgbox__icon">✓</span>
               <span>แปะแพตช์เสร็จแล้ว!</span>
-              <button class="close-x" id="patch-done-close" type="button" aria-label="ปิด">X</button>
+              <button class="close-x" id="patch-done-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
             </div>
             <div class="msgbox__body">
               <div class="patch-done__cover">
@@ -179,7 +179,7 @@ const consolesWithGames = consoles.filter((c) =>
               </div>
               <p class="patch-done__title" id="patch-done-title"></p>
               <div class="msgbox__actions">
-                <button class="btn btn--primary" id="download-btn">↓ ดาวน์โหลดไฟล์ภาษาไทย</button>
+                <button class="btn btn--primary" id="download-btn" data-sfx="none">↓ ดาวน์โหลดไฟล์ภาษาไทย</button>
               </div>
             </div>
           </div>

@@ -1,7 +1,7 @@
 import { getSupabase, showMessage, hideMessage } from '../lib/admin-client.js';
 import { buildBugReportPayload, explainBugReportError, formatSize } from '../lib/bug-report-form.js';
 import { compressImageIfNeeded } from '../lib/compress-image.js';
-import { sfxSuccess, sfxError, sfxWarn } from '../lib/sfx.js';
+import { sfxSuccess, sfxError, sfxWarn, sfxConfirm } from '../lib/sfx.js';
 
 const el = (id) => document.getElementById(id);
 
@@ -77,6 +77,7 @@ function init() {
   }
 
   async function handleSubmit() {
+    sfxConfirm();
     hideMessage(msg);
     clearFieldErrors();
 
