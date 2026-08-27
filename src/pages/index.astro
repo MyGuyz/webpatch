@@ -1,7 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
 import GameCard from '../components/GameCard.astro';
-import PixelIcon from '../components/PixelIcon.astro';
 import { getPublishedGames, getActiveAnnouncement, isUsingSeedData } from '../lib/games.js';
 
 const games = await getPublishedGames();
@@ -30,7 +29,6 @@ const inProgress = games.filter((g) => g.status === 'wip');
         <span class="hero__prompt" aria-hidden="true">▶ PRESS START</span>
         <a class="btn btn--primary hero__cta" href="/patch" data-sfx="confirm">🕹️ เลือกเกมแล้วแปะแพตช์เลย</a>
       </div>
-      <PixelIcon name="patch" class="hero__art" />
     </div>
   </header>
 
@@ -147,49 +145,26 @@ const inProgress = games.filter((g) => g.status === 'wip');
     text-align: center;
   }
 
-  :global(.hero__art) {
-    display: none;
-  }
-
+  /* เอาไอคอนมาสคอตออกแล้ว (รอรูปใหม่) เลยกลับไปจัดกลางแบบเดียวกับมือถือ
+     แค่ขยายระยะขอบ+ความกว้าง+ตัวหนังสือขึ้นให้เข้ากับจอที่กว้างขึ้น */
   @media (min-width: 720px) {
     .hero__body {
-      display: flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 40px;
-      text-align: left;
-      padding: 36px 40px;
+      padding: 48px 40px;
     }
 
-    /* เดิม .hero__text ไม่ถูกสั่งให้ขยาย เลยหดเหลือแค่ความกว้างของเนื้อหา (~285px)
-       ทิ้งช่องว่างเปล่าๆ ก้อนใหญ่ระหว่างข้อความกับไอคอนบนจอกว้าง — ให้มันยืดเต็มที่ที่มีแทน
-       (จำกัด max-width ไว้กันบรรทัดยาวเกินอ่านยากบนจอที่กว้างมากๆ) */
     .hero__text {
-      flex: 1 1 auto;
       max-width: 640px;
-    }
-
-    :global(.hero__art) {
-      display: block;
-      flex: none;
-      width: 160px;
-      height: 160px;
+      margin: 0 auto;
     }
   }
 
   @media (min-width: 1200px) {
     .hero__body {
-      gap: 56px;
-      padding: 48px 56px;
+      padding: 64px 56px;
     }
 
     .hero__text {
-      max-width: 680px;
-    }
-
-    :global(.hero__art) {
-      width: 220px;
-      height: 220px;
+      max-width: 720px;
     }
   }
 
@@ -204,6 +179,26 @@ const inProgress = games.filter((g) => g.status === 'wip');
     margin: 14px 0 0;
     color: var(--ink-soft);
     font-size: 0.95rem;
+  }
+
+  @media (min-width: 720px) {
+    .hero__title {
+      font-size: 3.4rem;
+    }
+
+    .hero__tag {
+      font-size: 1.1rem;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .hero__title {
+      font-size: 3.8rem;
+    }
+
+    .hero__tag {
+      font-size: 1.2rem;
+    }
   }
 
   /* แถบพลังงาน + ข้อความกระพริบ ให้ความรู้สึกหน้าจอ title screen ของเกมยุคเก่า */
@@ -243,12 +238,6 @@ const inProgress = games.filter((g) => g.status === 'wip');
     display: inline-flex;
     width: auto;
     margin-top: 18px;
-  }
-
-  @media (min-width: 720px) {
-    .hero__bar {
-      margin-left: 0;
-    }
   }
 
   .credit {
