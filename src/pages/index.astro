@@ -155,17 +155,41 @@ const inProgress = games.filter((g) => g.status === 'wip');
     .hero__body {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      gap: 32px;
+      justify-content: flex-start;
+      gap: 40px;
       text-align: left;
       padding: 36px 40px;
+    }
+
+    /* เดิม .hero__text ไม่ถูกสั่งให้ขยาย เลยหดเหลือแค่ความกว้างของเนื้อหา (~285px)
+       ทิ้งช่องว่างเปล่าๆ ก้อนใหญ่ระหว่างข้อความกับไอคอนบนจอกว้าง — ให้มันยืดเต็มที่ที่มีแทน
+       (จำกัด max-width ไว้กันบรรทัดยาวเกินอ่านยากบนจอที่กว้างมากๆ) */
+    .hero__text {
+      flex: 1 1 auto;
+      max-width: 640px;
     }
 
     :global(.hero__art) {
       display: block;
       flex: none;
-      width: 120px;
-      height: 120px;
+      width: 160px;
+      height: 160px;
+    }
+  }
+
+  @media (min-width: 1200px) {
+    .hero__body {
+      gap: 56px;
+      padding: 48px 56px;
+    }
+
+    .hero__text {
+      max-width: 680px;
+    }
+
+    :global(.hero__art) {
+      width: 220px;
+      height: 220px;
     }
   }
 
