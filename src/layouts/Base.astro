@@ -158,6 +158,16 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
         navigator.serviceWorker.register('/sw.js');
       }
     </script>
+    <script>
+      // Safari (โดยเฉพาะ iPhone) ชอบเก็บหน้าเว็บไว้ในหน่วยความจำ (bfcache) ตอนสลับแอป/แท็บออกไปแล้วกลับมา
+      // แทนที่จะโหลดหน้าใหม่ — ปัญหาคือทุกครั้งที่เว็บนี้ deploy เวอร์ชันใหม่ ไฟล์ CSS/JS ของเวอร์ชันเก่า
+      // จะถูกลบทิ้งจริงๆ ไม่เหลือไว้เลย ถ้าหน้าที่ค้างอยู่ใน bfcache อ้างอิงไฟล์เวอร์ชันเก่ากว่านั้น
+      // (เช่น เปิดทิ้งไว้ข้ามคืนแล้วมีคน deploy ใหม่) กลับมาเปิดจะได้หน้าเปล่าไม่มีสไตล์เลย
+      // แก้โดยสั่งโหลดหน้าใหม่ทันทีที่รู้ว่าเบราว์เซอร์คืนหน้าจาก bfcache แทนที่จะใช้ของเก่าที่ค้างไว้
+      window.addEventListener('pageshow', (event) => {
+        if (event.persisted) location.reload();
+      });
+    </script>
     <script src="../scripts/browser-gate.js"></script>
     <script src="../scripts/guide.js"></script>
     <script src="../scripts/click-sfx.js"></script>
