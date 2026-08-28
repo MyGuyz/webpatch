@@ -48,6 +48,9 @@
   --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
 
   --nav-height: 68px;
+
+  /* marker ให้ Base.astro เช็คได้ว่าไฟล์ CSS นี้โหลดสำเร็จจริง (ดูสคริปต์ heal ใน Base.astro) */
+  --css-loaded: 1;
 }
 
 * {

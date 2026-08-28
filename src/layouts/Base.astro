@@ -164,9 +164,32 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
       // จะถูกลบทิ้งจริงๆ ไม่เหลือไว้เลย ถ้าหน้าที่ค้างอยู่ใน bfcache อ้างอิงไฟล์เวอร์ชันเก่ากว่านั้น
       // (เช่น เปิดทิ้งไว้ข้ามคืนแล้วมีคน deploy ใหม่) กลับมาเปิดจะได้หน้าเปล่าไม่มีสไตล์เลย
       // แก้โดยสั่งโหลดหน้าใหม่ทันทีที่รู้ว่าเบราว์เซอร์คืนหน้าจาก bfcache แทนที่จะใช้ของเก่าที่ค้างไว้
+      //
+      // แต่ถ้าปิด Safari ทิ้งไว้นานจริงๆ (ไม่ใช่แค่สลับแอปสั้นๆ) iOS อาจคืนหน้าด้วยกลไกคนละแบบ
+      // ที่ไม่ยิง 'pageshow' แบบ persisted=true ตามที่คาดไว้ — เลยเพิ่มการเช็คตรงๆ ว่า CSS
+      // โหลดติดจริงไหม (ผ่านตัวแปร --css-loaded ใน theme.css) แล้ว reload เองถ้าไม่ติด
+      // กันเผื่อไว้ครอบคลุมทุกสาเหตุ ไม่ใช่แค่เคส bfcache ที่รู้จัก
+      function cssIsBroken() {
+        return getComputedStyle(document.documentElement).getPropertyValue('--css-loaded').trim() !== '1';
+      }
+      function healIfBroken() {
+        if (cssIsBroken()) {
+          if (!sessionStorage.getItem('css-heal-reload')) {
+            sessionStorage.setItem('css-heal-reload', '1');
+            location.reload();
+          }
+        } else {
+          sessionStorage.removeItem('css-heal-reload');
+        }
+      }
       window.addEventListener('pageshow', (event) => {
         if (event.persisted) location.reload();
+        else healIfBroken();
       });
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') healIfBroken();
+      });
+      healIfBroken();
     </script>
     <script src="../scripts/browser-gate.js"></script>
     <script src="../scripts/guide.js"></script>
