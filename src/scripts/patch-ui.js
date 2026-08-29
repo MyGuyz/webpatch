@@ -32,6 +32,8 @@ function init() {
 
   const gameSelect = el('game-select');
   const gameInfo = el('game-info');
+  const infoCoverImg = el('info-cover-img');
+  const infoCoverArt = gameInfo.querySelector('.info__cover-art');
   const stepFile = el('step-file');
   const fileInput = el('source-file');
   const fileSummary = el('file-summary');
@@ -97,6 +99,15 @@ function init() {
     el('info-status').className = `tag ${isBeta ? 'tag--beta' : 'tag--ready'}`;
     el('info-status').textContent = isBeta ? '★ BETA' : '★ READY';
     el('info-console').textContent = game.console?.name ?? '—';
+    if (game.cover_url) {
+      infoCoverImg.src = game.cover_url;
+      infoCoverImg.alt = `ปกเกม ${game.title}`;
+      infoCoverImg.hidden = false;
+      infoCoverArt.hidden = true;
+    } else {
+      infoCoverImg.hidden = true;
+      infoCoverArt.hidden = false;
+    }
     el('info-title').textContent = game.title;
     el('info-desc').textContent = game.description ?? '';
 

@@ -18,6 +18,10 @@ const inProgress = games.filter((g) => g.status === 'wip');
       <span>เกมย้อนยุค</span>
     </div>
     <div class="hero__body">
+      <picture class="hero__bg-pic">
+        <source media="(min-width: 720px)" srcset="/img/hero-bg-desktop.jpg" />
+        <img class="hero__bg" src="/img/hero-bg-mobile.jpg" alt="" />
+      </picture>
       <div class="hero__text">
         <h1 class="hero__title">เกมไทย</h1>
         <p class="hero__tag">เล่นเกมที่รักในภาษาที่เข้าใจ</p>
@@ -140,39 +144,48 @@ const inProgress = games.filter((g) => g.status === 'wip');
     }
   }
 
-  /* พื้นหลังฉากเกมพิกเซล — ตั้ง aspect-ratio ของกรอบให้ตรงกับสัดส่วนจริงของไฟล์ภาพ
-     (mobile 825x825, desktop 1024x420) แล้วใช้ background-size: contain
-     กรอบเลยมีความสูงเท่าที่ภาพต้องการพอดีเสมอ ไม่ครอบตัดขอบภาพทิ้งแบบที่ cover เคยทำ
-     ใช้รูปแนวตั้ง (mobile-bg) เป็นค่าเริ่มต้น แล้วสลับเป็นรูปแนวนอน (desktop-bg) ที่จอกว้างขึ้น
-     ถ้าข้อความในกรอบสูงกว่าที่ aspect-ratio กำหนด กรอบจะขยายสูงขึ้นตามข้อความแทน (ไม่ครอบตัดภาพ)
-     ถ้าเปลี่ยนไฟล์ภาพในอนาคต ต้องมาปรับ aspect-ratio ให้ตรงกับขนาดไฟล์ใหม่ด้วย */
+  /* พื้นหลังฉากเกมพิกเซล — เดิมลองใช้ aspect-ratio เดาสัดส่วนภาพ + background-size:contain
+     แต่ถ้าข้อความในกรอบสูงกว่าที่ aspect-ratio กำหนด กรอบจะขยายสูงกว่าภาพ แล้ว contain
+     จะเห็นเป็นแถบพื้นหลังว่างๆ (letterbox) โผล่มาทั้งบน-ล่าง ไม่ใช่ "กรอบสูงเท่าภาพ" จริงๆ
+
+     แก้โดยให้กรอบนี้ "สูงเท่าภาพเป๊ะ" เสมอไม่ว่าจอไหน ด้วยการเอารูปจริง (<img>) มาวางแบบ
+     ปกติ (width:100%; height:auto) ให้ความสูงของ .hero__body มาจากสัดส่วนจริงของรูปเพียว ๆ
+     แล้ววางข้อความทับด้านบนแบบ absolute แทน (ไม่กินพื้นที่ในระบบ layout ปกติ
+     เลยไม่ทำให้กรอบสูงเกินภาพ) ใช้รูปแนวตั้ง (mobile-bg) เป็นค่าเริ่มต้น แล้วสลับเป็น
+     รูปแนวนอน (desktop-bg) ที่จอกว้างขึ้นผ่าน <picture><source media=...> */
   .hero__body {
-    padding: 30px 20px 34px;
+    position: relative;
+  }
+
+  .hero__bg-pic,
+  .hero__bg {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .hero__text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px 20px 26px;
     text-align: center;
-    aspect-ratio: 1 / 1;
-    background: var(--surface) url('/img/hero-bg-mobile.jpg') center/contain no-repeat;
   }
 
   @media (min-width: 720px) {
-    .hero__body {
-      padding: 48px 40px;
-      aspect-ratio: 1024 / 420;
-      background-image: url('/img/hero-bg-desktop.jpg');
-      background-size: contain;
-    }
-
     .hero__text {
+      padding: 32px 40px;
       max-width: 640px;
       margin: 0 auto;
     }
   }
 
   @media (min-width: 1200px) {
-    .hero__body {
-      padding: 64px 56px;
-    }
-
     .hero__text {
+      padding: 40px 56px;
       max-width: 720px;
     }
   }
