@@ -140,26 +140,24 @@ const inProgress = games.filter((g) => g.status === 'wip');
     }
   }
 
-  /* พื้นหลังฉากเกมพิกเซล — ตั้งใจเว้นแถบกลางโล่งไว้ให้ข้อความอ่านง่าย
+  /* พื้นหลังฉากเกมพิกเซล — ตั้ง aspect-ratio ของกรอบให้ตรงกับสัดส่วนจริงของไฟล์ภาพ
+     (mobile 825x1024, desktop 1024x420) แล้วใช้ background-size: contain
+     กรอบเลยมีความสูงเท่าที่ภาพต้องการพอดีเสมอ ไม่ครอบตัดขอบภาพทิ้งแบบที่ cover เคยทำ
      ใช้รูปแนวตั้ง (mobile-bg) เป็นค่าเริ่มต้น แล้วสลับเป็นรูปแนวนอน (desktop-bg) ที่จอกว้างขึ้น
-
-     มือถือใช้ cover (เต็มกรอบ ครอบตัดขอบซ้าย-ขวาเล็กน้อย) เพราะบล็อกข้อความบนมือถือ
-     สูงกว่าที่รูปแนวตั้งควรจะเป็นมาก ถ้าใช้ contain รูปจะย่อเล็กจนแถบ "SCORE" ที่วาดไว้
-     เป็นพื้นล่างของฉาก ลอยไปทับกลางข้อความแทน (ลองแล้วดูเพี้ยน) — cover ยังคงเห็นฉาก
-     ครบทั้งบน-ล่าง (หมู่บ้าน+ปราสาท+แถบ SCORE ยังอยู่ตำแหน่งเดิม) แค่ขอบซ้าย-ขวาโดนตัดไปบ้าง
-     ส่วนจอกว้าง (desktop) สัดส่วนกล่องใกล้เคียงรูปอยู่แล้ว ใช้ contain เห็นภาพเต็มบานได้จริง */
+     ถ้าข้อความในกรอบสูงกว่าที่ aspect-ratio กำหนด กรอบจะขยายสูงขึ้นตามข้อความแทน (ไม่ครอบตัดภาพ) */
   .hero__body {
     padding: 30px 20px 34px;
     text-align: center;
-    background: var(--surface) url('/img/hero-bg-mobile.jpg') center/cover no-repeat;
+    aspect-ratio: 825 / 1024;
+    background: var(--surface) url('/img/hero-bg-mobile.jpg') center/contain no-repeat;
   }
 
   @media (min-width: 720px) {
     .hero__body {
       padding: 48px 40px;
+      aspect-ratio: 1024 / 420;
       background-image: url('/img/hero-bg-desktop.jpg');
       background-size: contain;
-      min-height: 400px;
     }
 
     .hero__text {

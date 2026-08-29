@@ -194,18 +194,6 @@ const consolesWithGames = consoles.filter((c) =>
               <div class="patch-done__cover">
                 <img id="patch-done-cover-img" alt="" hidden />
                 <PixelIcon name="patch" class="patch-done__cover-art" />
-                <a
-                  class="patch-done__cover-dl"
-                  id="patch-done-cover-dl"
-                  download
-                  target="_blank"
-                  rel="noopener"
-                  aria-label="ดาวน์โหลดภาพปกเกม"
-                  data-sfx="tick"
-                  hidden
-                >
-                  ⬇
-                </a>
               </div>
               <p class="patch-done__title" id="patch-done-title"></p>
 
@@ -436,7 +424,7 @@ const consolesWithGames = consoles.filter((c) =>
     display: flex;
     align-items: center;
     justify-content: center;
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 1 / 1;
     border: 2px solid var(--edge);
     background: var(--surface-sunken);
     margin-bottom: 12px;
@@ -454,30 +442,6 @@ const consolesWithGames = consoles.filter((c) =>
     width: 30%;
     max-width: 64px;
     image-rendering: pixelated;
-  }
-
-  /* ปุ่มดาวน์โหลดภาพปก — วางมุมขวาล่างทับรูปปก กดแยกจากตัวไฟล์เกมได้เลย */
-  .patch-done__cover-dl {
-    position: absolute;
-    right: 8px;
-    bottom: 8px;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 2px solid var(--edge);
-    background: var(--surface);
-    color: var(--ink);
-    font-size: 15px;
-    text-decoration: none;
-    box-shadow: 2px 2px 0 var(--edge);
-    transition: transform 0.05s ease, box-shadow 0.05s ease;
-  }
-
-  .patch-done__cover-dl:active {
-    transform: translate(2px, 2px);
-    box-shadow: 0 0 0 var(--edge);
   }
 
   .patch-done__title {

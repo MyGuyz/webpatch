@@ -51,7 +51,6 @@ function init() {
   const patchDoneDoneBtn = el('patch-done-done-btn');
   const patchDoneCoverImg = el('patch-done-cover-img');
   const patchDoneCoverArt = patchDoneModal.querySelector('.patch-done__cover-art');
-  const patchDoneCoverDl = el('patch-done-cover-dl');
   const patchDoneTitle = el('patch-done-title');
   const patchDoneFilename = el('patch-done-filename');
 
@@ -293,12 +292,9 @@ function init() {
       patchDoneCoverImg.alt = `ปกเกม ${selectedGame.title}`;
       patchDoneCoverImg.hidden = false;
       patchDoneCoverArt.hidden = true;
-      patchDoneCoverDl.href = selectedGame.cover_url;
-      patchDoneCoverDl.hidden = false;
     } else {
       patchDoneCoverImg.hidden = true;
       patchDoneCoverArt.hidden = false;
-      patchDoneCoverDl.hidden = true;
     }
     patchDoneModal.classList.add('open');
   }

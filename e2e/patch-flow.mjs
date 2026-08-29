@@ -180,8 +180,8 @@ await check('ไม่มีปุ่มดาวน์โหลดไฟล์�
   assert.equal(await page.locator('#download-btn').count(), 0);
 });
 
-await check('ปุ่มดาวน์โหลดภาพปกซ่อนอยู่เมื่อเกมนี้ไม่มีภาพปก', async () => {
-  assert.equal(await page.locator('#patch-done-cover-dl').isVisible(), false);
+await check('ไม่มีปุ่มดาวน์โหลดภาพปกในป๊อปอัปแปะเสร็จอีกต่อไป', async () => {
+  assert.equal(await page.locator('#patch-done-cover-dl').count(), 0);
 });
 
 await check('ปิดป๊อปอัปแปะเสร็จได้ด้วยปุ่ม "เข้าใจแล้ว เล่นได้เลย"', async () => {
