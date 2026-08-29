@@ -292,20 +292,27 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
 .nav__item {
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 3px;
   height: var(--nav-height);
   color: var(--ink-soft);
   text-decoration: none;
   font-family: var(--font-display);
   font-weight: 600;
-  font-size: 0.8rem;
+  font-size: 0.7rem;
 }
 
 .nav__item[aria-current='page'] {
   color: var(--ink);
   background: var(--amber);
   box-shadow: inset 0 3px 0 var(--edge);
+}
+
+.nav__icon {
+  width: 22px;
+  height: 22px;
 }
 
 /* ── เมนูบน (จอกว้าง) ─────────────────────────────────────── */
@@ -345,6 +352,7 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
 .top-nav__link {
   display: flex;
   align-items: center;
+  gap: 6px;
   padding: 8px 14px;
   border: 2px solid transparent;
   font-family: var(--font-display);
@@ -358,6 +366,11 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
   color: var(--ink);
   background: var(--amber);
   border-color: var(--edge);
+}
+
+.top-nav__icon {
+  width: 18px;
+  height: 18px;
 }
 
 @media (min-width: 720px) {

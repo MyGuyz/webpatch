@@ -1,11 +1,13 @@
 ---
+import PixelIcon from './PixelIcon.astro';
+
 const path = Astro.url.pathname;
 
 const items = [
-  { href: '/', label: 'หน้าแรก' },
-  { href: '/patch', label: 'แปะแพตช์' },
-  { href: '/progress', label: 'กำลังทำ' },
-  { href: '/report-bug', label: 'แจ้งบั๊ก' },
+  { href: '/', icon: 'home', label: 'หน้าแรก' },
+  { href: '/patch', icon: 'patch', label: 'แปะแพตช์' },
+  { href: '/progress', icon: 'wip', label: 'กำลังทำ' },
+  { href: '/report-bug', icon: 'bug', label: 'แจ้งบั๊ก' },
 ] as const;
 ---
 
@@ -17,6 +19,7 @@ const items = [
         href={item.href}
         aria-current={path === item.href ? 'page' : undefined}
       >
+        <PixelIcon name={item.icon} class="nav__icon" />
         <span>{item.label}</span>
       </a>
     ))
@@ -34,6 +37,7 @@ const items = [
             href={item.href}
             aria-current={path === item.href ? 'page' : undefined}
           >
+            <PixelIcon name={item.icon} class="top-nav__icon" />
             <span>{item.label}</span>
           </a>
         ))
