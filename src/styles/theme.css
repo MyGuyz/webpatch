@@ -611,6 +611,86 @@ select:focus, input:focus, textarea:focus, .btn:focus-visible, a:focus-visible {
   }
 }
 
+/* ปุ่มหัวใจสนับสนุน — วางซ้อนเหนือปุ่ม "?" ในตำแหน่งเดียวกัน (fixed มุมขวาล่าง)
+   ใช้พื้นหลังสีอ่อนแทนพื้นแดงเหมือนปุ่ม "?" เพราะไอคอนหัวใจข้างในเป็นสีแดง (--clay) อยู่แล้ว
+   ถ้าพื้นหลังก็แดงด้วยไอคอนจะกลืนมองไม่เห็น */
+.donate-btn {
+  position: fixed;
+  right: 16px;
+  bottom: calc(var(--nav-height) + 16px + 42px + 10px + env(safe-area-inset-bottom));
+  z-index: 15;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--edge);
+  box-shadow: var(--shadow);
+  background: var(--surface);
+  cursor: pointer;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+}
+
+.donate-btn:active {
+  transform: translate(4px, 4px);
+  box-shadow: 0 0 0 var(--edge);
+}
+
+.donate-btn__icon {
+  width: 24px;
+  height: 24px;
+}
+
+@media (min-width: 720px) {
+  .donate-btn {
+    bottom: calc(16px + 42px + 10px);
+  }
+}
+
+/* กรอบ QR ในป๊อปอัปสนับสนุน — ล็อกไว้ 1:1 เสมอ ใช้ object-fit:contain ไม่ใช่ cover
+   เพราะ QR code ห้ามถูกครอบตัดขอบเด็ดขาด ไม่งั้นสแกนไม่ขึ้น */
+.donate-qr {
+  aspect-ratio: 1 / 1;
+  max-width: 220px;
+  margin: 0 auto 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--edge);
+  background: var(--surface-sunken);
+  overflow: hidden;
+}
+
+.donate-qr img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.donate-qr__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+}
+
+.donate-qr__empty p {
+  margin: 0;
+}
+
+.donate-qr__empty-icon {
+  width: 32px;
+  height: 32px;
+}
+
+.donate-thanks {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
 /* ── กล่องข้อความอธิบายผล (msgbox) — ใช้แทน log ดิบๆ ตอนมีเรื่องต้องอธิบาย ── */
 
 .msgbox {

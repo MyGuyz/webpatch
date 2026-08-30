@@ -2,6 +2,7 @@
 import { ClientRouter } from 'astro:transitions';
 import '../styles/theme.css';
 import BottomNav from '../components/BottomNav.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 
 interface Props {
   title: string;
@@ -42,6 +43,9 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
       <slot />
     </main>
 
+    <button class="donate-btn" id="donate-btn" aria-label="เปิดช่องทางสนับสนุน" transition:persist>
+      <PixelIcon name="heart" class="donate-btn__icon" />
+    </button>
     <button class="help-btn" id="help-btn" aria-label="เปิดคู่มือมือใหม่" transition:persist>?</button>
 
     <div class="overlay" id="browser-gate" transition:persist>
@@ -152,6 +156,43 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
       </div>
     </div>
 
+    <div class="overlay" id="donate-modal" transition:persist>
+      <div class="cart overlay__card">
+        <div class="cart__label" style="background: var(--clay); color: #fff8e8;">
+          <span>♥ สนับสนุนเรา</span>
+          <button class="close-x" id="donate-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
+        </div>
+        <div class="cart__body" style="text-align: center;">
+          <div class="donate-qr">
+            <img
+              id="donate-qr-img"
+              src="/img/donate-qr.jpg"
+              alt="QR code ช่องทางสนับสนุน"
+              onerror="this.hidden=true; this.nextElementSibling.hidden=false"
+            />
+            <div class="donate-qr__empty" hidden>
+              <PixelIcon name="heart" class="donate-qr__empty-icon" />
+              <p>ยังไม่ได้ใส่ภาพ QR</p>
+            </div>
+          </div>
+          <p class="donate-thanks">ขอบคุณที่ช่วยสนับสนุนทีมงานนะครับ 🙏</p>
+          <p class="muted" style="margin: 0 0 16px;">
+            ทุกกำลังใจ (และทุกบาท) ช่วยให้เราแปลเกมและดูแลเว็บนี้ต่อไปได้
+          </p>
+          <a
+            class="btn btn--primary"
+            id="donate-shopee-btn"
+            href="#"
+            target="_blank"
+            rel="noopener sponsored"
+            data-sfx="confirm"
+          >
+            คลิก = สนับสนุน
+          </a>
+        </div>
+      </div>
+    </div>
+
     <script>
       // ลงทะเบียนไว้เฉพาะให้กด "ติดตั้งเป็นแอป" ได้ ไม่ได้ใช้แคชอะไร (ดู public/sw.js)
       if ('serviceWorker' in navigator) {
@@ -193,6 +234,7 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
     </script>
     <script src="../scripts/browser-gate.js"></script>
     <script src="../scripts/guide.js"></script>
+    <script src="../scripts/donate.js"></script>
     <script src="../scripts/click-sfx.js"></script>
   </body>
 </html>
