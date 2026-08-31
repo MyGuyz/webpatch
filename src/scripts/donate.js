@@ -5,12 +5,6 @@ const donateModal = el('donate-modal');
 const donateBtn = el('donate-btn');
 if (donateModal && donateBtn) start();
 
-/**
- * ลิงก์สินค้า Shopee ที่ปุ่ม "คลิก = สนับสนุน" จะพาไป — สุ่มเลือก 1 อันทุกครั้งที่เปิดป๊อปอัปนี้
- * ใส่ได้หลายลิงก์ตามต้องการ (ยังเป็นลิงก์ตัวอย่าง รอใส่ลิงก์ Shopee จริงแทน)
- */
-const SHOPEE_LINKS = ['https://shopee.co.th/'];
-
 function start() {
   donateBtn.addEventListener('click', () => {
     sfxChime();
@@ -24,8 +18,13 @@ function start() {
 }
 
 function openDonate() {
-  const link = SHOPEE_LINKS[Math.floor(Math.random() * SHOPEE_LINKS.length)];
-  el('donate-shopee-btn').href = link;
+  // ลิงก์สินค้า Shopee มาจากตาราง shopee_links ใน Supabase (ดู getShopeeLinks ใน lib/games.js)
+  // ส่งมาเป็น data island ใน Base.astro — สุ่มเลือก 1 อันทุกครั้งที่เปิดป๊อปอัปนี้
+  const links = JSON.parse(el('shopee-links-data')?.textContent ?? '[]');
+  if (links.length > 0) {
+    const link = links[Math.floor(Math.random() * links.length)];
+    el('donate-shopee-btn').href = link.url;
+  }
   donateModal.classList.add('open');
 }
 

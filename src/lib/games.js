@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { SEED_GAMES, SEED_CONSOLES, SEED_ANNOUNCEMENT } from './seed-games.js';
+import { SEED_GAMES, SEED_CONSOLES, SEED_ANNOUNCEMENT, SEED_SHOPEE_LINKS } from './seed-games.js';
 
 /**
  * ชั้นข้อมูลของเว็บ
@@ -151,6 +151,24 @@ export async function getActiveAnnouncement() {
 
   if (error) throw new Error(`อ่านประกาศไม่สำเร็จ: ${error.message}`);
   return data;
+}
+
+/**
+ * ลิงก์สินค้า Shopee สำหรับปุ่ม "คลิก = สนับสนุน" ในป๊อปอัปสนับสนุน — ดึงจากตาราง
+ * shopee_links เพื่อให้ผู้ดูแลเว็บเพิ่ม/ลบลิงก์ได้เองผ่าน SQL editor ของ Supabase
+ * โดยไม่ต้องแก้โค้ด ระบบจะสุ่มเลือก 1 ลิงก์จากที่เปิดใช้งานอยู่ทุกครั้งที่เปิดป๊อปอัป
+ */
+export async function getShopeeLinks() {
+  const supabase = getClient();
+  if (!supabase) return SEED_SHOPEE_LINKS;
+
+  const { data, error } = await supabase
+    .from('shopee_links')
+    .select('url')
+    .eq('is_active', true);
+
+  if (error) throw new Error(`อ่านลิงก์ Shopee ไม่สำเร็จ: ${error.message}`);
+  return data?.length ? data : SEED_SHOPEE_LINKS;
 }
 
 /**

@@ -3,6 +3,7 @@ import { ClientRouter } from 'astro:transitions';
 import '../styles/theme.css';
 import BottomNav from '../components/BottomNav.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import { getShopeeLinks } from '../lib/games.js';
 
 interface Props {
   title: string;
@@ -11,6 +12,8 @@ interface Props {
 
 const { title, description = 'แจกแพตช์แปลไทยสำหรับเกมย้อนยุค แปะเองได้ในเบราว์เซอร์' } =
   Astro.props;
+
+const shopeeLinks = await getShopeeLinks();
 ---
 
 <!doctype html>
@@ -44,7 +47,7 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
     </main>
 
     <button class="donate-btn" id="donate-btn" aria-label="เปิดช่องทางสนับสนุน" transition:persist>
-      <PixelIcon name="heart" class="donate-btn__icon" />
+      <img src="/img/donate-heart.jpg" alt="" class="donate-btn__icon" />
     </button>
     <button class="help-btn" id="help-btn" aria-label="เปิดคู่มือมือใหม่" transition:persist>?</button>
 
@@ -159,7 +162,10 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
     <div class="overlay" id="donate-modal" transition:persist>
       <div class="cart overlay__card">
         <div class="cart__label" style="background: var(--clay); color: #fff8e8;">
-          <span>♥ สนับสนุนเรา</span>
+          <span class="donate-modal__title">
+            <img src="/img/donate-heart.jpg" alt="" class="donate-modal__title-icon" />
+            สนับสนุนเรา
+          </span>
           <button class="close-x" id="donate-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
         </div>
         <div class="cart__body" style="text-align: center;">
@@ -192,6 +198,8 @@ const { title, description = 'แจกแพตช์แปลไทยสำ�
         </div>
       </div>
     </div>
+
+    <script type="application/json" id="shopee-links-data" set:html={JSON.stringify(shopeeLinks)} />
 
     <script>
       // ลงทะเบียนไว้เฉพาะให้กด "ติดตั้งเป็นแอป" ได้ ไม่ได้ใช้แคชอะไร (ดู public/sw.js)

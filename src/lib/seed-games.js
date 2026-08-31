@@ -79,3 +79,5 @@ export const SEED_GAMES = [
 export const SEED_ANNOUNCEMENT = {
   body: 'เว็บนี้เพิ่งเริ่มต้น กำลังทยอยเพิ่มเกมและอัปเดตใหม่ๆ เข้ามาเรื่อยๆ แวะมาดูอีกทีได้นะครับ',
 };
+
+export const SEED_SHOPEE_LINKS = [{ url: 'https://shopee.co.th/' }];
