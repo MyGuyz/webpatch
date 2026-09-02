@@ -27,6 +27,12 @@ function init() {
   const listBox = el('game-list');
   const rowTemplate = el('game-row');
 
+  const quickUpdateModal = el('quick-update-modal');
+  const quickUpdateTitle = el('quick-update-title');
+  const quickUpdateForm = el('quick-update-form');
+  const quickUpdateMsg = el('quick-update-msg');
+  let quickUpdateGame = null;
+
   const supabase = getSupabase();
 
   unsubscribeAuth?.();
@@ -138,6 +144,8 @@ function init() {
     if (!game.source_sha1) bits.push('ไม่ได้ตรวจรุ่นไฟล์');
     node.querySelector('[data-meta]').textContent = bits.join(' · ');
 
+    node.querySelector('[data-quick-update]').addEventListener('click', () => openQuickUpdate(game));
+
     node.querySelector('[data-edit]').addEventListener('click', () => {
       location.href = `/admin/game?id=${game.id}`;
     });
@@ -189,6 +197,79 @@ function init() {
     showMessage(listMsg, `ลบ "${game.title}" แล้ว`, 'ok');
     await loadGames();
   }
+
+  // ── อัปเดตเวอร์ชันแพตช์แบบเร็ว ────────────────────────────
+  //
+  // ปกติแก้ patch_url/patch_version ต้องเปิดฟอร์มแก้เกมทั้งหน้า (มีหลายส่วนไม่เกี่ยวกัน
+  // คั่นอยู่ก่อน) ทั้งที่เรื่องนี้เป็นงานที่ทำบ่อยที่สุดหลังเกมเผยแพร่ไปแล้ว —
+  // ป๊อปอัปนี้เลยมีแค่ 3 ช่องที่เกี่ยวข้องจริง พร้อมเพิ่ม changelog ให้ในขั้นตอนเดียวกันเลย
+
+  function openQuickUpdate(game) {
+    quickUpdateGame = game;
+    quickUpdateTitle.textContent = `${game.title} — ตอนนี้ ${game.patch_version ?? 'ยังไม่มีเวอร์ชัน'}`;
+    quickUpdateForm.elements.patch_url.value = game.patch_url ?? '';
+    quickUpdateForm.elements.patch_version.value = game.patch_version ?? '';
+    quickUpdateForm.elements.changelog_body.value = '';
+    hideMessage(quickUpdateMsg);
+    quickUpdateModal.classList.add('open');
+  }
+
+  function closeQuickUpdate() {
+    quickUpdateModal.classList.remove('open');
+    quickUpdateGame = null;
+  }
+
+  el('quick-update-close').addEventListener('click', closeQuickUpdate);
+
+  quickUpdateForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!quickUpdateGame) return;
+    hideMessage(quickUpdateMsg);
+
+    const values = Object.fromEntries(new FormData(quickUpdateForm));
+    const patchUrl = values.patch_url.trim();
+    const patchVersion = values.patch_version.trim();
+    const changelogBody = values.changelog_body.trim();
+
+    if (!patchUrl || !patchVersion) {
+      showMessage(quickUpdateMsg, 'ต้องกรอกลิงก์ไฟล์แพตช์และเวอร์ชัน');
+      return;
+    }
+
+    const saveBtn = el('quick-update-save');
+    saveBtn.disabled = true;
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const { error: gameError } = await supabase
+      .from('games')
+      .update({ patch_url: patchUrl, patch_version: patchVersion, patch_updated_at: today })
+      .eq('id', quickUpdateGame.id);
+
+    if (gameError) {
+      saveBtn.disabled = false;
+      showMessage(quickUpdateMsg, `บันทึกไม่สำเร็จ: ${gameError.message}`);
+      return;
+    }
+
+    if (changelogBody) {
+      const { error: changelogError } = await supabase
+        .from('changelogs')
+        .insert({ game_id: quickUpdateGame.id, version: patchVersion, body: changelogBody, released_at: today });
+
+      if (changelogError) {
+        saveBtn.disabled = false;
+        // ตัวเกมอัปเดตสำเร็จไปแล้ว แค่ changelog ที่พลาด บอกให้ชัดว่าไม่ใช่ทั้งก้อนล้มเหลว
+        showMessage(quickUpdateMsg, `อัปเดตแพตช์สำเร็จ แต่เพิ่ม changelog ไม่สำเร็จ: ${changelogError.message}`);
+        return;
+      }
+    }
+
+    saveBtn.disabled = false;
+    closeQuickUpdate();
+    showMessage(listMsg, `อัปเดต "${quickUpdateGame.title}" เป็น ${patchVersion} แล้ว`, 'ok');
+    await loadGames();
+  });
 
   el('add-btn').addEventListener('click', () => {
     location.href = '/admin/game';

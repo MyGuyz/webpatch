@@ -72,6 +72,7 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
         <p class="muted mono" data-slug></p>
         <p class="muted" data-meta></p>
         <div class="row__actions">
+          <button class="btn btn--ghost btn--small" data-quick-update>🔄 อัปเดตเวอร์ชัน</button>
           <button class="btn btn--ghost btn--small" data-edit>แก้ไข</button>
           <button class="btn btn--ghost btn--small" data-publish></button>
           <button class="btn btn--ghost btn--small btn--danger" data-delete>ลบ</button>
@@ -79,6 +80,47 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
       </div>
     </article>
   </template>
+
+  <div class="overlay" id="quick-update-modal">
+    <div class="cart overlay__card">
+      <div class="cart__label">
+        <span>🔄 อัปเดตเวอร์ชันแพตช์</span>
+        <button class="close-x" id="quick-update-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
+      </div>
+      <div class="cart__body">
+        <p class="muted" id="quick-update-title" style="margin: 0 0 14px; font-weight: 600;"></p>
+
+        <p class="hint">
+          อัปไฟล์ใหม่ขึ้น <strong>GitHub Releases</strong> เป็น release ใหม่ก่อน (อย่าทับ release เดิม)
+          แล้วคลิกขวาที่ไฟล์ → <strong>Copy link address</strong> เอามาวางในช่องนี้
+        </p>
+
+        <form id="quick-update-form">
+          <label class="field">
+            <span class="field__label">ลิงก์ไฟล์แพตช์ใหม่ *</span>
+            <input type="text" name="patch_url" placeholder="https://github.com/.../file.ppf" required />
+            <span class="err" data-err="patch_url"></span>
+          </label>
+
+          <label class="field">
+            <span class="field__label">เวอร์ชันใหม่ *</span>
+            <input type="text" name="patch_version" placeholder="V1.1" required />
+          </label>
+
+          <label class="field">
+            <span class="field__label">แก้อะไรบ้าง (ไม่บังคับ — ใส่แล้วจะขึ้น "ประวัติการอัปเดต" ให้ผู้เล่นเห็นด้วย)</span>
+            <textarea name="changelog_body" rows="2" placeholder="แก้บทสนทนาบทที่ 3 ที่ตกกรอบ"></textarea>
+          </label>
+
+          <p class="msg" id="quick-update-msg" hidden></p>
+
+          <div class="actions">
+            <button class="btn btn--primary" type="submit" id="quick-update-save" data-sfx="confirm">บันทึก</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
     window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
@@ -149,5 +191,40 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 
   .back {
     margin: 24px 0;
+  }
+
+  textarea {
+    width: 100%;
+    padding: 12px 14px;
+    background: var(--surface);
+    border: 2px solid var(--edge);
+    border-radius: var(--radius-sm);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 1rem;
+    resize: vertical;
+  }
+
+  .hint {
+    font-size: 0.86rem;
+    color: var(--ink-soft);
+    margin: 0 0 14px;
+  }
+
+  .err {
+    display: none;
+    margin-top: 5px;
+    font-size: 0.83rem;
+    color: var(--danger);
+  }
+
+  .err:not(:empty) {
+    display: block;
+  }
+
+  .actions {
+    display: flex;
+    gap: 12px;
+    margin: 20px 0 4px;
   }
 </style>
