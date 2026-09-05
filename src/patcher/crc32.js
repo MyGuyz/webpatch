@@ -22,3 +22,19 @@ export function crc32(bytes) {
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
+
+/**
+ * เหมือน crc32() แต่ไล่ทีละ segment ของ BigBuffer แทนที่จะต้องรวมเป็น Uint8Array
+ * เดียวก่อน (ไฟล์ ROM ขนาด GB ระดับ PS2 รวมเป็นก้อนเดียวไม่ได้ — ดู big-buffer.js)
+ */
+export function crc32OfBigBuffer(bigBuffer) {
+  if (!table) table = buildTable();
+
+  let crc = 0xffffffff;
+  for (const segment of bigBuffer.segments) {
+    for (let i = 0; i < segment.length; i++) {
+      crc = table[(crc ^ segment[i]) & 0xff] ^ (crc >>> 8);
+    }
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}

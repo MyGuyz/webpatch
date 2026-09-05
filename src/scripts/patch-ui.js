@@ -1,11 +1,18 @@
 import { applyPatch } from '../patcher/index.js';
-import { sha1Hex } from '../patcher/sha1.js';
+import { sha1HexOfBlob } from '../patcher/sha1.js';
+import { BigBuffer } from '../patcher/big-buffer.js';
 import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError, sfxCancel } from '../lib/sfx.js';
 
 const el = (id) => document.getElementById(id);
 
 /** ไฟล์ที่ใหญ่กว่านี้เสี่ยงแรมไม่พอบนมือถือ จึงเตือนก่อน */
 const BIG_FILE_BYTES = 300 * 1024 * 1024;
+
+/**
+ * ไฟล์ที่ใหญ่กว่านี้ (ระดับแผ่น PS2 ขึ้นไป) ต้องถือทั้งไฟล์ต้นฉบับ + ไฟล์ผลลัพธ์ไว้ใน
+ * หน่วยความจำพร้อมกัน — เตือนเรื่องแรมให้ชัดกว่าข้อความไฟล์ใหญ่ทั่วไป (ดู ADR-016)
+ */
+const VERY_BIG_FILE_BYTES = 1.5 * 1024 * 1024 * 1024;
 
 /**
  * URL ของไฟล์ผลลัพธ์ (blob) อยู่นอก init() เพราะเว็บนี้เปลี่ยนหน้าแบบ SPA
@@ -66,7 +73,7 @@ function init() {
   }
 
   let selectedGame = null;
-  let sourceBytes = null;
+  let sourceFile = null;
   let sourceName = '';
   let resultFilename = '';
 
@@ -160,7 +167,7 @@ function init() {
   }
 
   function resetFileState() {
-    sourceBytes = null;
+    sourceFile = null;
     sourceName = '';
     fileInput.value = '';
     fileSummary.textContent = '';
@@ -220,33 +227,57 @@ function init() {
     sourceName = file.name;
     fileSummary.textContent = `${file.name} · ${formatSize(file.size)}`;
 
+    // เช็คว่าเป็นไฟล์บีบอัดไหมด้วย magic bytes 4 ไบต์แรกพอ — ไม่ต้องอ่านทั้งไฟล์
+    // (เดิมอ่านทั้งไฟล์เป็น ArrayBuffer เดียวตรงนี้เลย ซึ่งพังทันทีถ้าไฟล์ใหญ่กว่า ~2GB
+    // ก่อนจะทันได้ตรวจอะไรเลยด้วยซ้ำ — ดู ADR-016)
+    let header;
     try {
-      sourceBytes = new Uint8Array(await file.arrayBuffer());
+      header = new Uint8Array(await file.slice(0, 4).arrayBuffer());
     } catch {
       sfxError();
-      alert('อ่านไฟล์ไม่สำเร็จ — ไฟล์อาจใหญ่เกินกว่าที่เครื่องจะไหว ลองบนคอมพิวเตอร์ดูนะ');
+      alert('อ่านไฟล์ไม่สำเร็จ — ลองปิดแท็บ/โปรแกรมอื่นเพื่อเคลียร์แรมแล้วลองใหม่');
       return;
     }
 
-    if (isZipFile(sourceBytes, file.name)) {
+    if (isZipFile(header, file.name)) {
       sfxError();
       showFileStatus('zip');
-      sourceBytes = null;
       return;
     }
 
     if (selectedGame?.source_sha1) {
-      const actual = await sha1Hex(sourceBytes);
+      fileSummary.textContent = `${file.name} · ${formatSize(file.size)} · กำลังตรวจไฟล์...`;
+
+      let actual;
+      try {
+        actual = await sha1HexOfBlob(file, (loaded, total) => {
+          if (loaded < total) {
+            const percent = Math.round((loaded / total) * 100);
+            fileSummary.textContent = `${file.name} · ${formatSize(file.size)} · กำลังตรวจไฟล์... ${percent}%`;
+          }
+        });
+      } catch {
+        sfxError();
+        alert('อ่านไฟล์ไม่สำเร็จ — ลองปิดแท็บ/โปรแกรมอื่นเพื่อเคลียร์แรมแล้วลองใหม่');
+        fileSummary.textContent = `${file.name} · ${formatSize(file.size)}`;
+        return;
+      }
+
+      fileSummary.textContent = `${file.name} · ${formatSize(file.size)}`;
 
       if (actual.toLowerCase() !== selectedGame.source_sha1.toLowerCase()) {
         sfxError();
         showFileStatus('error');
-        sourceBytes = null;
         return;
       }
     }
 
+    sourceFile = file;
     bigFileNote.hidden = file.size <= BIG_FILE_BYTES;
+    bigFileNote.textContent =
+      file.size > VERY_BIG_FILE_BYTES
+        ? 'ไฟล์นี้ใหญ่มาก (ระดับแผ่น PS2 ขึ้นไป) ต้องใช้แรมค่อนข้างเยอะระหว่างแปะ แนะนำปิดแท็บ/โปรแกรมอื่นก่อน และใช้คอมพิวเตอร์ (ไม่ใช่มือถือ) อย่าเพิ่งปิดแท็บระหว่างแปะนะครับ'
+        : 'ไฟล์นี้ค่อนข้างใหญ่ อาจใช้เวลาสักพัก อย่าเพิ่งปิดแท็บระหว่างแปะนะครับ';
     sfxConfirm();
     showFileStatus('ok');
   }
@@ -254,7 +285,7 @@ function init() {
   // ── แปะแพตช์ ──────────────────────────────────────────────
 
   async function runPatch() {
-    if (!selectedGame || !sourceBytes) return;
+    if (!selectedGame || !sourceFile) return;
 
     sfxConfirm();
     runError.hidden = true;
@@ -273,15 +304,24 @@ function init() {
         updateProgress('กำลังโหลดไฟล์แพตช์...', total ? loaded / total : null);
       });
 
+      // อ่านไฟล์ต้นฉบับทีละก้อนเข้า BigBuffer แทนที่จะอ่านทั้งไฟล์เป็น ArrayBuffer เดียว
+      // (ตัวแปะแพตช์ทั้ง 3 รูปแบบรับ BigBuffer ตั้งแต่รองรับไฟล์เกิน ~2GB — ดู ADR-016)
+      const sourceBig = await BigBuffer.fromBlob(sourceFile, undefined, (loaded, total) => {
+        updateProgress('กำลังเตรียมไฟล์เกมต้นฉบับ...', total ? loaded / total : null);
+      });
+
       // ขั้นตอนคำนวณแปะแพตช์เป็นการคำนวณก้อนเดียวจบในเบราว์เซอร์ ไม่มีจุดให้รายงาน %
       // ระหว่างทางได้ (ต่างจากขั้นโหลดไฟล์ที่รู้ความคืบหน้าจาก stream) จึงโชว์เป็นแถบวิ่งแทน
       updateProgress('กำลังแปะแพตช์...', null);
       await nextFrame();
 
-      const result = applyPatch(sourceBytes, patchBytes, selectedGame.patch_format);
+      const result = applyPatch(sourceBig, patchBytes, selectedGame.patch_format);
+
+      updateProgress('กำลังเตรียมไฟล์ให้ดาวน์โหลด...', null);
+      await nextFrame();
 
       if (resultUrl) URL.revokeObjectURL(resultUrl);
-      resultUrl = URL.createObjectURL(new Blob([result], { type: 'application/octet-stream' }));
+      resultUrl = URL.createObjectURL(result.toBlob());
       resultFilename = thaiFileName(sourceName);
 
       hideProgress();

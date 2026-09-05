@@ -3,6 +3,10 @@
  * รองรับทั้ง 3 รุ่น: PPF1.0, PPF2.0, PPF3.0
  *
  * ต่างกันตรงส่วนหัวและขนาดของ offset เท่านั้น ส่วนเนื้อเรคคอร์ดเหมือนกัน
+ *
+ * `source` เป็น BigBuffer (ดู big-buffer.js) ไม่ใช่ Uint8Array ตรงๆ เพราะแผ่น PS2 มักใหญ่กว่า
+ * ~2GB ที่ ArrayBuffer เดียวถืออยู่ไม่ได้ — `patch` (ตัวไฟล์ .ppf เอง) ยังเป็น Uint8Array ปกติ
+ * เพราะเป็นไฟล์ diff เล็กกว่ามาก ไม่ชนเพดานนี้
  */
 
 const DESCRIPTION_LENGTH = 50;
@@ -10,7 +14,7 @@ const BLOCK_CHECK_LENGTH = 1024;
 
 export function applyPPF(source, patch) {
   const version = readVersion(patch);
-  const out = new Uint8Array(source);
+  const out = source.clone();
 
   let pos;
   let offsetSize;
@@ -63,7 +67,7 @@ export function applyPPF(source, patch) {
       );
     }
 
-    out.set(patch.subarray(pos, pos + size), offset);
+    out.write(offset, patch.subarray(pos, pos + size));
     pos += size;
 
     // PPF3.0 ที่เปิด undo จะแนบข้อมูลเดิมไว้ท้ายเรคคอร์ด สำหรับย้อนกลับ — เราข้ามไป

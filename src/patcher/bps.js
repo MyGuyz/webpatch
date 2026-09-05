@@ -2,14 +2,18 @@
  * BPS — สร้างไฟล์ผลลัพธ์ขึ้นใหม่จากไฟล์ต้นฉบับ + คำสั่งในแพตช์
  * spec: https://www.romhacking.net/documents/746/
  *
- * ต่างจาก IPS/PPF ตรงที่ไม่ได้เขียนทับเป็นจุดๆ แต่ประกอบไฟล์ใหม่ทั้งก้อน
- * จึงกินหน่วยความจำมากกว่า — แต่ใช้กับ ROM เล็ก (SNES/GBA) จึงไม่ชนเพดาน
+ * ต่างจาก IPS/PPF ตรงที่ไม่ได้เขียนทับเป็นจุดๆ แต่ประกอบไฟล์ใหม่ทั้งก้อน จึงกินหน่วยความจำ
+ * มากกว่า (ต้องมีทั้งต้นฉบับและผลลัพธ์อยู่พร้อมกัน) แต่เดิมทีใช้กับ ROM เล็ก (SNES/GBA)
+ * จึงไม่ชนเพดานอะไร — ตอนนี้รองรับไฟล์ใหญ่ได้ด้วยผ่าน BigBuffer (ดู big-buffer.js) แต่ก็ยัง
+ * กินแรมมากกว่า IPS/PPF อยู่ดีสำหรับไฟล์ขนาดเดียวกัน (ต้องถือทั้งต้นฉบับ+ผลลัพธ์พร้อมกัน
+ * ไม่ใช่แค่เขียนทับบนสำเนาต้นฉบับเหมือนสองแบบนั้น)
  *
  * BPS มี checksum ฝังมาในตัว ทำให้ตรวจได้ว่าไฟล์ต้นฉบับถูกรุ่นไหม
  * และไฟล์ผลลัพธ์ออกมาถูกต้องหรือเปล่า
  */
 
-import { crc32 } from './crc32.js';
+import { crc32OfBigBuffer } from './crc32.js';
+import { BigBuffer } from './big-buffer.js';
 
 const MAGIC = [0x42, 0x50, 0x53, 0x31]; // "BPS1"
 
@@ -41,11 +45,11 @@ export function applyBPS(source, patch) {
   }
 
   const sourceChecksum = readUint32LE(patch, actionsEnd);
-  if (crc32(source) !== sourceChecksum) {
+  if (crc32OfBigBuffer(source) !== sourceChecksum) {
     throw new Error('ไฟล์ต้นฉบับไม่ตรงรุ่นที่แพตช์นี้รองรับ (checksum ไม่ตรง)');
   }
 
-  const target = new Uint8Array(targetSize);
+  const target = new BigBuffer(targetSize, source.segmentBytes);
   let outPos = 0;
   let sourceRelative = 0;
   let targetRelative = 0;
@@ -58,20 +62,20 @@ export function applyBPS(source, patch) {
     switch (command) {
       case SOURCE_READ:
         // คัดลอกจากตำแหน่งเดียวกันในไฟล์ต้นฉบับ
-        target.set(source.subarray(outPos, outPos + length), outPos);
+        target.write(outPos, source.read(outPos, length));
         outPos += length;
         break;
 
       case TARGET_READ:
         // ข้อมูลใหม่ที่ฝังมาในแพตช์ตรงๆ
-        target.set(patch.subarray(reader.pos, reader.pos + length), outPos);
+        target.write(outPos, patch.subarray(reader.pos, reader.pos + length));
         reader.pos += length;
         outPos += length;
         break;
 
       case SOURCE_COPY: {
         sourceRelative += readSignedVarint(reader);
-        target.set(source.subarray(sourceRelative, sourceRelative + length), outPos);
+        target.write(outPos, source.read(sourceRelative, length));
         sourceRelative += length;
         outPos += length;
         break;
@@ -80,16 +84,16 @@ export function applyBPS(source, patch) {
       case TARGET_COPY: {
         targetRelative += readSignedVarint(reader);
         // ต้องคัดทีละไบต์ เพราะช่วงต้นทางกับปลายทางซ้อนทับกันได้ (ใช้ทำ RLE)
-        for (let i = 0; i < length; i++) {
-          target[outPos++] = target[targetRelative++];
-        }
+        target.copyWithinSelf(outPos, targetRelative, length);
+        outPos += length;
+        targetRelative += length;
         break;
       }
     }
   }
 
   const targetChecksum = readUint32LE(patch, actionsEnd + 4);
-  if (crc32(target) !== targetChecksum) {
+  if (crc32OfBigBuffer(target) !== targetChecksum) {
     throw new Error('ไฟล์ผลลัพธ์ผิดพลาด (checksum ไม่ตรง) — แพตช์อาจเสียหาย');
   }
 
