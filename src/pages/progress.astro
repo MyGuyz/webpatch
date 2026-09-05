@@ -1,5 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
+import PixelIcon from '../components/PixelIcon.astro';
 import { getPublishedGames, PROGRESS_STAGES } from '../lib/games.js';
 
 const games = await getPublishedGames();
@@ -25,6 +26,16 @@ const inProgress = games.filter((g) => g.status === 'wip');
               <span class="tag tag--console">{game.console?.name ?? '—'}</span>
             </div>
             <div class="cart__body">
+              <div class="wip__cover">
+                {
+                  game.cover_url ? (
+                    <img src={game.cover_url} alt={`ปกเกม ${game.title}`} loading="lazy" />
+                  ) : (
+                    <PixelIcon name="patch" class="wip__cover-art" />
+                  )
+                }
+              </div>
+
               <h2 class="title">{game.title}</h2>
               <p class="muted stage">{PROGRESS_STAGES[game.progress_stage - 1] ?? ''}</p>
               {game.description && <p class="desc">{game.description}</p>}
@@ -44,6 +55,19 @@ const inProgress = games.filter((g) => g.status === 'wip');
 <style>
   .page-head { font-size: 1.7rem; margin: 20px 0 8px; }
   .lead { margin: 0 0 16px; }
+  .wip__cover {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    aspect-ratio: 1 / 1;
+    max-width: 160px;
+    border: 2px solid var(--edge);
+    background: var(--surface-sunken);
+    margin: 0 0 12px;
+    overflow: hidden;
+  }
+  .wip__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .wip__cover :global(.wip__cover-art) { width: 30%; max-width: 48px; image-rendering: pixelated; }
   .title { font-size: 1.15rem; }
   .stage { margin: 2px 0 0; }
   .desc { font-size: 0.92rem; margin: 10px 0; }
