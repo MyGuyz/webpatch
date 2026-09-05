@@ -1,4 +1,4 @@
-import { sha1Hex } from '../patcher/sha1.js';
+import { sha1HexOfBlob } from '../patcher/sha1.js';
 
 document.addEventListener('astro:page-load', init);
 
@@ -24,13 +24,18 @@ function init() {
     status.textContent = `กำลังคำนวณ... (${formatSize(file.size)} — ไฟล์ใหญ่ใช้เวลาสักพัก)`;
 
     try {
-      const bytes = new Uint8Array(await file.arrayBuffer());
-      hash.textContent = await sha1Hex(bytes);
+      // อ่านทีละก้อนเล็กๆ แทนการอ่านทั้งไฟล์เป็น ArrayBuffer เดียว — เบราว์เซอร์ปฏิเสธ
+      // ArrayBuffer เดี่ยวที่ใหญ่กว่า ~2GB เสมอไม่ว่าจะมีแรมเหลือแค่ไหนก็ตาม (ดู ADR-015)
+      hash.textContent = await sha1HexOfBlob(file, (loaded, total) => {
+        if (loaded < total) {
+          status.textContent = `กำลังคำนวณ... ${formatSize(loaded)} / ${formatSize(total)}`;
+        }
+      });
       meta.textContent = `${file.name} · ${formatSize(file.size)} · ${file.size.toLocaleString()} ไบต์`;
       status.textContent = 'คำนวณเสร็จแล้ว';
       result.hidden = false;
     } catch {
-      status.textContent = 'อ่านไฟล์ไม่สำเร็จ — ไฟล์อาจใหญ่เกินกว่าที่เครื่องจะไหว ลองบนคอมพิวเตอร์ดูนะ';
+      status.textContent = 'อ่านไฟล์ไม่สำเร็จ — ลองปิดแท็บ/โปรแกรมอื่นเพื่อเคลียร์แรมแล้วลองใหม่';
     }
   });
 
