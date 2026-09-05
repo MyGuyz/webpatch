@@ -180,6 +180,12 @@ const consolesWithGames = consoles.filter((c) =>
               <p class="muted" id="patch-big-file-note" hidden>
                 ไฟล์นี้ค่อนข้างใหญ่ อาจใช้เวลาสักพัก อย่าเพิ่งปิดแท็บระหว่างแปะนะครับ
               </p>
+              <div class="patch-progress" id="patch-progress" hidden>
+                <p class="patch-progress__label" id="patch-progress-label"></p>
+                <div class="patch-progress__bar" id="patch-progress-bar">
+                  <span id="patch-progress-fill"></span>
+                </div>
+              </div>
               <p class="msgbox__run-error" id="patch-run-error" hidden></p>
               <div class="msgbox__actions">
                 <button class="btn btn--primary" id="apply-btn" type="button" data-sfx="none">✨ แปะแพตช์ภาษาไทย</button>
@@ -412,6 +418,48 @@ const consolesWithGames = consoles.filter((c) =>
 
   #patch-big-file-note {
     margin: 10px 0 0;
+  }
+
+  .patch-progress {
+    margin: 12px 0 0;
+  }
+
+  .patch-progress__label {
+    margin: 0 0 6px;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .patch-progress__bar {
+    height: 14px;
+    border: 2px solid var(--edge);
+    background: var(--surface-sunken);
+    padding: 2px;
+  }
+
+  .patch-progress__bar span {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: var(--teal);
+    transition: width 0.15s linear;
+  }
+
+  /* ขั้นตอนที่ไม่รู้ % ที่แน่นอน (เช่นตอนกำลังคำนวณแปะแพตช์) — โชว์แถบลายทางวิ่งแทนตัวเลข */
+  .patch-progress__bar--indeterminate span {
+    width: 100% !important;
+    background: repeating-linear-gradient(90deg, var(--teal) 0 10px, var(--teal-deep) 10px 20px);
+    background-size: 28px 100%;
+    animation: patch-progress-stripes 0.8s linear infinite;
+  }
+
+  @keyframes patch-progress-stripes {
+    from {
+      background-position: 0 0;
+    }
+    to {
+      background-position: 28px 0;
+    }
   }
 
   .msgbox__run-error {

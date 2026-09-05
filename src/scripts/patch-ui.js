@@ -48,6 +48,10 @@ function init() {
   const bigFileNote = el('patch-big-file-note');
   const runError = el('patch-run-error');
   const applyBtn = el('apply-btn');
+  const progressBox = el('patch-progress');
+  const progressLabel = el('patch-progress-label');
+  const progressBar = el('patch-progress-bar');
+  const progressFill = el('patch-progress-fill');
   const patchDoneModal = el('patch-done-modal');
   const patchDoneClose = el('patch-done-close');
   const patchDoneDoneBtn = el('patch-done-done-btn');
@@ -164,6 +168,7 @@ function init() {
     setApplyPhase('patch');
     bigFileNote.hidden = true;
     runError.hidden = true;
+    hideProgress();
     closePatchDoneModal();
   }
 
@@ -254,6 +259,7 @@ function init() {
     sfxConfirm();
     runError.hidden = true;
     setApplyPhase('running');
+    showProgress('กำลังโหลดไฟล์แพตช์...', 0);
 
     try {
       const response = await fetch(`/api/patch-file/${selectedGame.id}`);
@@ -263,9 +269,13 @@ function init() {
         throw new Error(detail || `โหลดแพตช์ไม่สำเร็จ (${response.status})`);
       }
 
-      const patchBytes = new Uint8Array(await response.arrayBuffer());
+      const patchBytes = await readResponseWithProgress(response, (loaded, total) => {
+        updateProgress('กำลังโหลดไฟล์แพตช์...', total ? loaded / total : null);
+      });
 
-      // ยอมให้หน้าจอวาดสถานะ "กำลังแปะ..." ก่อน เพราะขั้นถัดไปกินเวลาและบล็อกจอ
+      // ขั้นตอนคำนวณแปะแพตช์เป็นการคำนวณก้อนเดียวจบในเบราว์เซอร์ ไม่มีจุดให้รายงาน %
+      // ระหว่างทางได้ (ต่างจากขั้นโหลดไฟล์ที่รู้ความคืบหน้าจาก stream) จึงโชว์เป็นแถบวิ่งแทน
+      updateProgress('กำลังแปะแพตช์...', null);
       await nextFrame();
 
       const result = applyPatch(sourceBytes, patchBytes, selectedGame.patch_format);
@@ -274,14 +284,69 @@ function init() {
       resultUrl = URL.createObjectURL(new Blob([result], { type: 'application/octet-stream' }));
       resultFilename = thaiFileName(sourceName);
 
+      hideProgress();
       sfxSuccess();
       setApplyPhase('download');
     } catch (error) {
+      hideProgress();
       sfxError();
       runError.hidden = false;
       runError.textContent = `${error.message} — ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ`;
       setApplyPhase('patch');
     }
+  }
+
+  // ── แถบความคืบหน้า ────────────────────────────────────────
+
+  function showProgress(label, ratio) {
+    progressBox.hidden = false;
+    updateProgress(label, ratio);
+  }
+
+  function updateProgress(label, ratio) {
+    const known = typeof ratio === 'number' && Number.isFinite(ratio);
+    progressBar.classList.toggle('patch-progress__bar--indeterminate', !known);
+    progressFill.style.width = known ? `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%` : '';
+    progressLabel.textContent = known ? `${label} ${Math.round(ratio * 100)}%` : label;
+  }
+
+  function hideProgress() {
+    progressBox.hidden = true;
+  }
+
+  /**
+   * อ่านไฟล์แพตช์จาก response ทีละก้อนพร้อมรายงานความคืบหน้า แทนการรอ response.arrayBuffer()
+   * เฉยๆ ที่ไม่มีจุดให้รู้ % ระหว่างทางเลย — เบราว์เซอร์ที่ไม่รองรับ streaming body (หายากมาก)
+   * จะได้ผลลัพธ์เหมือนเดิมแค่ไม่มี % ระหว่างทาง
+   */
+  async function readResponseWithProgress(response, onProgress) {
+    const total = Number(response.headers.get('content-length')) || 0;
+
+    if (!response.body) {
+      const buffer = await response.arrayBuffer();
+      onProgress(buffer.byteLength, total || buffer.byteLength);
+      return new Uint8Array(buffer);
+    }
+
+    const reader = response.body.getReader();
+    const chunks = [];
+    let loaded = 0;
+
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      chunks.push(value);
+      loaded += value.byteLength;
+      onProgress(loaded, total);
+    }
+
+    const result = new Uint8Array(loaded);
+    let offset = 0;
+    for (const chunk of chunks) {
+      result.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return result;
   }
 
   /** ดาวน์โหลดไฟล์ผลลัพธ์ ปิดป๊อปอัป "ไฟล์นี้ใช้ได้" แล้วเด้งป๊อปอัปคู่มือเปิดเล่นต่อทันที */
