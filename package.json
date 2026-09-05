@@ -10,7 +10,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "test": "node --test src/patcher/patcher.test.js src/lib/allowed-hosts.test.js src/lib/game-form.test.js src/lib/bug-report-form.test.js",
+    "test": "node --test src/patcher/patcher.test.js src/patcher/sha1.test.js src/lib/allowed-hosts.test.js src/lib/game-form.test.js src/lib/bug-report-form.test.js",
     "test:e2e": "node e2e/patch-flow.mjs"
   },
   "repository": {
