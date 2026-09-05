@@ -1,5 +1,5 @@
-import { getSupabase, showMessage, hideMessage } from '../lib/admin-client.js';
-import { buildBugReportPayload, explainBugReportError, formatSize } from '../lib/bug-report-form.js';
+import { showMessage, hideMessage } from '../lib/admin-client.js';
+import { buildBugReportPayload, formatSize } from '../lib/bug-report-form.js';
 import { compressImageIfNeeded } from '../lib/compress-image.js';
 import { sfxSuccess, sfxError, sfxWarn, sfxConfirm } from '../lib/sfx.js';
 
@@ -22,14 +22,6 @@ function init() {
   const mediaInput = el('media-input');
   const mediaSummary = el('media-summary');
   const submitBtn = el('submit-btn');
-
-  const supabase = getSupabase();
-
-  if (!supabase) {
-    form.hidden = true;
-    showMessage(msg, 'ยังไม่ได้ตั้งค่า Supabase — หน้านี้ยังส่งรายงานไม่ได้');
-    return;
-  }
 
   fillGameOptions();
 
@@ -94,8 +86,8 @@ function init() {
     hideMessage(msg);
     clearFieldErrors();
 
-    // กับดักสแปมง่ายๆ — ช่องนี้ซ่อนไว้ คนจริงไม่มีทางกรอก บอทที่กรอกทุกช่องจะติด
-    // เนียนไว้ว่าส่งสำเร็จ จะได้ไม่รู้ตัวว่าโดนกัน
+    // กับดักสแปมง่ายๆ — ช่องนี้ซ่อนไว้ คนจริงไม่มีทางกรอกทัน เนียนไว้ว่าส่งสำเร็จ จะได้ไม่รู้ตัวว่าโดนกัน
+    // (เซิร์ฟเวอร์เช็คซ้ำอีกชั้นเสมอ อันนี้แค่กันไม่ให้บอทที่ติดกับดักยิงคำขอออกไปโดยเปล่าประโยชน์)
     if (form.elements.note_extra.value.trim() !== '') {
       form.reset();
       showMessage(msg, 'ส่งรายงานแล้ว ขอบคุณครับ', 'ok');
@@ -105,6 +97,8 @@ function init() {
     const values = Object.fromEntries(new FormData(form));
     const files = [...mediaInput.files];
 
+    // ตรวจฝั่งเบราว์เซอร์ก่อนเพื่อบอกผู้ใช้ได้ทันทีโดยไม่ต้องรอเซิร์ฟเวอร์ —
+    // เซิร์ฟเวอร์ (/api/bug-report-submit) ยังตรวจซ้ำแบบเดียวกันอีกชั้นเสมอ เป็นด่านจริง
     const result = buildBugReportPayload(values, files);
     if (!result.ok) {
       sfxWarn();
@@ -114,26 +108,23 @@ function init() {
     }
 
     submitBtn.disabled = true;
-    submitBtn.textContent = 'กำลังส่ง...';
 
     try {
-      const guard = await checkRateLimit();
-      if (!guard.allowed) {
-        showMessage(msg, guard.message);
-        return;
-      }
-
       submitBtn.textContent = 'กำลังย่อรูป...';
       const filesToUpload = await Promise.all(files.map(compressImageIfNeeded));
 
       submitBtn.textContent = 'กำลังส่ง...';
-      const mediaPaths = await uploadFiles(filesToUpload);
+      const body = new FormData();
+      for (const [key, value] of Object.entries(values)) body.append(key, value);
+      for (const file of filesToUpload) body.append('media', file, file.name);
 
-      const { error } = await supabase
-        .from('bug_reports')
-        .insert({ ...result.payload, media_paths: mediaPaths });
+      const response = await fetch('/api/bug-report-submit', { method: 'POST', body });
+      const data = await response.json().catch(() => null);
 
-      if (error) throw error;
+      if (!response.ok || !data?.ok) {
+        if (data?.errors) showFieldErrors(data.errors);
+        throw new Error(data?.message || 'ส่งรายงานไม่สำเร็จ ลองใหม่อีกครั้ง');
+      }
 
       form.reset();
       mediaSummary.textContent = '';
@@ -142,40 +133,11 @@ function init() {
       showMessage(msg, 'ส่งรายงานแล้ว ขอบคุณที่ช่วยแจ้งครับ 🙏', 'ok');
     } catch (error) {
       sfxError();
-      showMessage(msg, explainBugReportError(error));
+      showMessage(msg, error.message);
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = 'ส่งรายงาน';
     }
-  }
-
-  async function checkRateLimit() {
-    try {
-      const response = await fetch('/api/bug-report-guard', { method: 'POST' });
-      return await response.json();
-    } catch {
-      // เช็คไม่สำเร็จ (เช่นออฟไลน์) — ปล่อยผ่าน อย่าบล็อกคนแจ้งบั๊กจริงเพราะปัญหาที่ไม่เกี่ยวกับเขา
-      return { allowed: true };
-    }
-  }
-
-  async function uploadFiles(files) {
-    const folder = crypto.randomUUID();
-    const paths = [];
-
-    for (const [index, file] of files.entries()) {
-      const safeName = file.name.replace(/[^a-zA-Z0-9.-]/g, '_');
-      const path = `${folder}/${index}-${safeName}`;
-
-      const { error } = await supabase.storage
-        .from('bug-reports')
-        .upload(path, file, { contentType: file.type });
-
-      if (error) throw error;
-      paths.push(path);
-    }
-
-    return paths;
   }
 
   function clearFieldErrors() {

@@ -16,9 +16,6 @@ const gamesForClient = games.map((g) => ({
   console: g.console ? { id: g.console.id, name: g.console.name } : null,
   versions: versionsByGame[g.id] ?? [],
 }));
-
-const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL ?? '';
-const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
 ---
 
 <Base title="แจ้งบั๊ก — แมแปว" description="เจอคำแปลผิดหรือเกมค้าง บอกเราได้ที่นี่">
@@ -145,9 +142,6 @@ const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY ?? '';
     )
   }
 
-  <script is:inline define:vars={{ supabaseUrl, supabaseKey }}>
-    window.__SUPABASE__ = { url: supabaseUrl, key: supabaseKey };
-  </script>
   <script type="application/json" id="report-bug-data" set:html={JSON.stringify(gamesForClient)} />
   <script src="../scripts/report-bug-ui.js"></script>
 </Base>
