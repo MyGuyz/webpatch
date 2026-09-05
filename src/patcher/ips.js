@@ -6,6 +6,9 @@
  *
  * `source` เป็น BigBuffer (ดู big-buffer.js) ไม่ใช่ Uint8Array ตรงๆ เพราะไฟล์ต้นฉบับอาจใหญ่กว่า
  * ~2GB ที่ ArrayBuffer เดียวถืออยู่ไม่ได้ — `patch` (ตัวไฟล์ .ips เอง) ยังเป็น Uint8Array ปกติ
+ *
+ * เขียนทับ `source` ตรงๆ แล้วคืนตัวมันเอง (ไม่ clone ก่อน) — ผู้เรียกห้ามใช้ `source` เดิมต่อ
+ * หลังเรียกฟังก์ชันนี้ (เหตุผลเดียวกับ ppf.js — ลดแรมพีคที่ต้องใช้ลงครึ่งหนึ่งสำหรับไฟล์ใหญ่)
  */
 
 const MAGIC = [0x50, 0x41, 0x54, 0x43, 0x48]; // "PATCH"
@@ -19,7 +22,7 @@ export function applyIPS(source, patch) {
   }
 
   // เผื่อที่ไว้ก่อน เพราะบางแพตช์เขียนเลยท้ายไฟล์ต้นฉบับเพื่อขยายไฟล์
-  const out = source.clone();
+  const out = source;
   let pos = MAGIC.length;
 
   while (pos < patch.length) {

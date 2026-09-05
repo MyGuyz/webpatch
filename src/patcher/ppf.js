@@ -7,6 +7,12 @@
  * `source` เป็น BigBuffer (ดู big-buffer.js) ไม่ใช่ Uint8Array ตรงๆ เพราะแผ่น PS2 มักใหญ่กว่า
  * ~2GB ที่ ArrayBuffer เดียวถืออยู่ไม่ได้ — `patch` (ตัวไฟล์ .ppf เอง) ยังเป็น Uint8Array ปกติ
  * เพราะเป็นไฟล์ diff เล็กกว่ามาก ไม่ชนเพดานนี้
+ *
+ * เขียนทับ `source` ตรงๆ แล้วคืนตัวมันเอง (ไม่ clone ก่อน) — ผู้เรียกห้ามใช้ `source` เดิมต่อ
+ * หลังเรียกฟังก์ชันนี้ ตั้งใจแลกมาเพื่อลดแรมพีคที่ต้องใช้ครึ่งหนึ่ง (ไฟล์ระดับ PS2 เต็มแผ่น
+ * การ clone ก่อนเขียนจะต้องมีทั้งต้นฉบับและสำเนาอยู่พร้อมกันชั่วขณะ กินแรมพีคเป็น ~2 เท่าของ
+ * ขนาดไฟล์โดยไม่จำเป็น ทั้งที่ในการใช้งานจริง (patch-ui.js) ตัว source ที่ส่งเข้ามาถูกสร้างขึ้น
+ * มาเพื่อแปะแพตช์ครั้งนี้ครั้งเดียวอยู่แล้ว ไม่มีใครต้องใช้ค่าดิบต่อ)
  */
 
 const DESCRIPTION_LENGTH = 50;
@@ -14,7 +20,7 @@ const BLOCK_CHECK_LENGTH = 1024;
 
 export function applyPPF(source, patch) {
   const version = readVersion(patch);
-  const out = source.clone();
+  const out = source;
 
   let pos;
   let offsetSize;
