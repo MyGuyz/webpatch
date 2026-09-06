@@ -1,7 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
-import PixelIcon from '../components/PixelIcon.astro';
-import { getPublishedGames, PROGRESS_STAGES } from '../lib/games.js';
+import GameCard from '../components/GameCard.astro';
+import { getPublishedGames } from '../lib/games.js';
 
 const games = await getPublishedGames();
 const inProgress = games.filter((g) => g.status === 'wip');
@@ -18,34 +18,10 @@ const inProgress = games.filter((g) => g.status === 'wip');
     inProgress.length === 0 ? (
       <p class="muted">ตอนนี้ยังไม่มีเกมที่กำลังทำอยู่</p>
     ) : (
-      <div class="stack">
+      // การ์ดใช้ GameCard ตัวเดียวกับหน้าแรก ให้กรอบ/ขนาดภาพปกเหมือนกันทุกที่ในเว็บ
+      <div class="games-grid">
         {inProgress.map((game) => (
-          <article class="cart">
-            <div class="cart__label">
-              <span class="tag tag--wip">STAGE {game.progress_stage}/5</span>
-              <span class="tag tag--console">{game.console?.name ?? '—'}</span>
-            </div>
-            <div class="cart__body">
-              <div class="wip__cover">
-                {
-                  game.cover_url ? (
-                    <img src={game.cover_url} alt={`ปกเกม ${game.title}`} loading="lazy" />
-                  ) : (
-                    <PixelIcon name="patch" class="wip__cover-art" />
-                  )
-                }
-              </div>
-
-              <h2 class="title">{game.title}</h2>
-              <p class="muted stage">{PROGRESS_STAGES[game.progress_stage - 1] ?? ''}</p>
-              {game.description && <p class="desc">{game.description}</p>}
-
-              <div class="bar" role="img" aria-label={`คืบหน้า ${game.progress_percent}%`}>
-                <div class="bar__fill" style={`width:${game.progress_percent}%`}></div>
-              </div>
-              <p class="muted percent">แปลไปแล้ว {game.progress_percent}%</p>
-            </div>
-          </article>
+          <GameCard game={game} />
         ))}
       </div>
     )
@@ -53,32 +29,34 @@ const inProgress = games.filter((g) => g.status === 'wip');
 </Base>
 
 <style>
-  .page-head { font-size: 1.7rem; margin: 20px 0 8px; }
-  .lead { margin: 0 0 16px; }
-  .wip__cover {
+  .page-head {
+    font-size: 1.7rem;
+    margin: 20px 0 8px;
+  }
+
+  .lead {
+    margin: 0 0 16px;
+  }
+
+  /* ค่าเดียวกับ .games-grid ในหน้าแรก (index.astro) — Astro scope สไตล์แยกไฟล์
+     จึงต้องคัดลอกมาไว้ที่นี่ด้วย ไม่งั้นการ์ดจะไม่ได้ grid/ขนาดคอลัมน์แบบเดียวกัน */
+  .games-grid {
     display: flex;
-    align-items: center;
-    justify-content: center;
-    aspect-ratio: 1 / 1;
-    max-width: 160px;
-    border: 2px solid var(--edge);
-    background: var(--surface-sunken);
-    margin: 0 0 12px;
-    overflow: hidden;
+    flex-direction: column;
+    gap: 16px;
   }
-  .wip__cover img { width: 100%; height: 100%; object-fit: cover; display: block; }
-  .wip__cover :global(.wip__cover-art) { width: 30%; max-width: 48px; image-rendering: pixelated; }
-  .title { font-size: 1.15rem; }
-  .stage { margin: 2px 0 0; }
-  .desc { font-size: 0.92rem; margin: 10px 0; }
-  .bar {
-    height: 10px;
-    background: var(--surface-sunken);
-    border: 2px solid var(--edge);
-    border-radius: 999px;
-    overflow: hidden;
-    margin-top: 12px;
+
+  @media (min-width: 700px) {
+    .games-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 16px;
+    }
   }
-  .bar__fill { height: 100%; background: var(--clay); }
-  .percent { margin: 6px 0 0; }
+
+  @media (min-width: 1200px) {
+    .games-grid {
+      gap: 20px;
+    }
+  }
 </style>

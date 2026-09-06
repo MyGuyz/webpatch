@@ -1,6 +1,6 @@
 ---
 import PixelIcon from './PixelIcon.astro';
-import { STATUS_LABELS } from '../lib/games.js';
+import { STATUS_LABELS, PROGRESS_STAGES } from '../lib/games.js';
 
 interface Props {
   game: any;
@@ -9,6 +9,7 @@ interface Props {
 
 const { game, href } = Astro.props;
 const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
+const isWip = game.status === 'wip';
 
 // รายละเอียดภาษาไทยแยกออกมาอีกบรรทัด เพราะบรรทัดเวอร์ชันด้านบนใช้ฟอนต์พิกเซลที่ไม่มีอักษรไทย
 const details = [
@@ -38,6 +39,18 @@ const details = [
     {game.subtitle && <p class="muted game__subtitle">{game.subtitle}</p>}
     {game.description && <p class="game__desc">{game.description}</p>}
 
+    {
+      isWip && (
+        <div class="game__progress">
+          <p class="muted game__stage">{PROGRESS_STAGES[game.progress_stage - 1] ?? ''}</p>
+          <div class="game__bar" role="img" aria-label={`คืบหน้า ${game.progress_percent}%`}>
+            <div class="game__bar-fill" style={`width:${game.progress_percent}%`} />
+          </div>
+          <p class="muted game__percent">แปลไปแล้ว {game.progress_percent}%</p>
+        </div>
+      )
+    }
+
     {game.patch_version && <p class="game__meta">PATCH {game.patch_version}</p>}
     {details.length > 0 && <p class="muted game__details">{details.join(' · ')}</p>}
     {
@@ -65,6 +78,10 @@ const details = [
     display: flex;
     flex-direction: column;
     height: 100%;
+    /* กันการ์ดยืดกว้างเกินจริงตอนแถวนั้นมีการ์ดเดียว (เช่นหน้ากำลังทำที่มักมีแค่ 1-2 เกม) —
+       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) ให้คอลัมน์เดียวกว้างเต็มแถว
+       ถ้าไม่มี max-width กำกับไว้ ภาพปกสี่เหลี่ยมจัตุรัส (aspect-ratio: 1/1) จะโตตามจนดูแปลก */
+    max-width: 420px;
   }
 
   .cart__body {
@@ -112,6 +129,31 @@ const details = [
   .game__desc {
     margin: 10px 0 0;
     font-size: 0.92rem;
+  }
+
+  .game__progress {
+    margin-top: 10px;
+  }
+
+  .game__stage {
+    margin: 0 0 6px;
+  }
+
+  .game__bar {
+    height: 10px;
+    background: var(--surface-sunken);
+    border: 2px solid var(--edge);
+    border-radius: 999px;
+    overflow: hidden;
+  }
+
+  .game__bar-fill {
+    height: 100%;
+    background: var(--clay);
+  }
+
+  .game__percent {
+    margin: 6px 0 0;
   }
 
   .game__meta {
