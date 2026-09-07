@@ -1,6 +1,7 @@
 import { applyPatch } from '../patcher/index.js';
 import { sha1HexOfBlob } from '../patcher/sha1.js';
 import { BigBuffer } from '../patcher/big-buffer.js';
+import { pickRandomShopeeLink } from '../lib/shopee-links.js';
 import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError, sfxCancel } from '../lib/sfx.js';
 
 const el = (id) => document.getElementById(id);
@@ -61,7 +62,7 @@ function init() {
   const progressFill = el('patch-progress-fill');
   const patchDoneModal = el('patch-done-modal');
   const patchDoneClose = el('patch-done-close');
-  const patchDoneDoneBtn = el('patch-done-done-btn');
+  const patchDoneSupportBtn = el('patch-done-support-btn');
   const patchDoneCoverImg = el('patch-done-cover-img');
   const patchDoneCoverArt = patchDoneModal.querySelector('.patch-done__cover-art');
   const patchDoneTitle = el('patch-done-title');
@@ -412,6 +413,12 @@ function init() {
       patchDoneCoverImg.hidden = true;
       patchDoneCoverArt.hidden = false;
     }
+
+    // ปุ่ม "คลิก = สนับสนุน" สุ่มลิงก์ Shopee ใหม่ทุกครั้งที่แปะแพตช์เสร็จ (แบบเดียวกับ
+    // ป๊อปอัปสนับสนุนหลัก — ดู donate.js)
+    const shopeeLink = pickRandomShopeeLink();
+    if (shopeeLink) patchDoneSupportBtn.href = shopeeLink.url;
+
     patchDoneModal.classList.add('open');
   }
 
@@ -458,10 +465,6 @@ function init() {
   });
   patchDoneClose.addEventListener('click', () => {
     sfxCancel();
-    closePatchDoneModal();
-  });
-  patchDoneDoneBtn.addEventListener('click', () => {
-    sfxTick();
     closePatchDoneModal();
   });
 

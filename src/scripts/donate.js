@@ -1,4 +1,5 @@
 import { sfxChime, sfxCancel } from '../lib/sfx.js';
+import { pickRandomShopeeLink } from '../lib/shopee-links.js';
 
 const el = (id) => document.getElementById(id);
 const donateModal = el('donate-modal');
@@ -19,12 +20,9 @@ function start() {
 
 function openDonate() {
   // ลิงก์สินค้า Shopee มาจากตาราง shopee_links ใน Supabase (ดู getShopeeLinks ใน lib/games.js)
-  // ส่งมาเป็น data island ใน Base.astro — สุ่มเลือก 1 อันทุกครั้งที่เปิดป๊อปอัปนี้
-  const links = JSON.parse(el('shopee-links-data')?.textContent ?? '[]');
-  if (links.length > 0) {
-    const link = links[Math.floor(Math.random() * links.length)];
-    el('donate-shopee-btn').href = link.url;
-  }
+  // สุ่มเลือก 1 อันทุกครั้งที่เปิดป๊อปอัปนี้
+  const link = pickRandomShopeeLink();
+  if (link) el('donate-shopee-btn').href = link.url;
   donateModal.classList.add('open');
 }
 
