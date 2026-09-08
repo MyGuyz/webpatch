@@ -76,6 +76,10 @@ function init() {
   const progressLabel = el('patch-progress-label');
   const progressBar = el('patch-progress-bar');
   const progressFill = el('patch-progress-fill');
+  const fileCheckProgressBox = el('file-check-progress');
+  const fileCheckProgressLabel = el('file-check-progress-label');
+  const fileCheckProgressBar = el('file-check-progress-bar');
+  const fileCheckProgressFill = el('file-check-progress-fill');
   const patchDoneModal = el('patch-done-modal');
   const patchDoneClose = el('patch-done-close');
   const patchDoneSupportBtn = el('patch-done-support-btn');
@@ -196,6 +200,7 @@ function init() {
     bigFileNote.hidden = true;
     runError.hidden = true;
     hideProgress();
+    fileCheckProgress.hide();
     closePatchDoneModal();
   }
 
@@ -284,6 +289,8 @@ function init() {
   async function validateAndAcceptFile(file) {
     if (selectedGame?.source_sha1) {
       fileSummary.textContent = `${file.name} · ${formatSize(file.size)} · กำลังตรวจไฟล์...`;
+      fileCheckProgress.show('กำลังตรวจไฟล์ต้นฉบับ...', 0);
+      await acquireWakeLock(); // ไฟล์ใหญ่แฮชนานหลายนาทีได้ — กันจอดับกลางทางจนหน้าเว็บค้าง
 
       let actual;
       try {
@@ -292,12 +299,16 @@ function init() {
             const percent = Math.round((loaded / total) * 100);
             fileSummary.textContent = `${file.name} · ${formatSize(file.size)} · กำลังตรวจไฟล์... ${percent}%`;
           }
+          fileCheckProgress.update('กำลังตรวจไฟล์ต้นฉบับ...', total ? loaded / total : null);
         });
       } catch {
         sfxError();
         alert('อ่านไฟล์ไม่สำเร็จ — ลองปิดแท็บ/โปรแกรมอื่นเพื่อเคลียร์แรมแล้วลองใหม่');
         fileSummary.textContent = `${file.name} · ${formatSize(file.size)}`;
         return;
+      } finally {
+        await releaseWakeLock();
+        fileCheckProgress.hide();
       }
 
       fileSummary.textContent = `${file.name} · ${formatSize(file.size)}`;
@@ -362,6 +373,7 @@ function init() {
 
     setApplyPhase('running');
     showProgress('กำลังโหลดไฟล์แพตช์...', 0);
+    await acquireWakeLock(); // ขั้นตอนนี้ยาวได้หลายนาที — กันจอดับกลางทางจนหน้าเว็บค้าง
 
     try {
       const response = await fetch(`/api/patch-file/${selectedGame.id}`);
@@ -381,6 +393,11 @@ function init() {
         await streamApplyPPF(sourceFile, patchBytes, stream.writable, (written, total) => {
           updateProgress('กำลังแปะและบันทึกไฟล์...', total ? written / total : null);
         });
+
+        // เบราว์เซอร์เขียนข้อมูลลงดิสก์จริงตอน close() นี้เอง (ตอน write() ก่อนหน้าแค่คิว
+        // ไว้เฉยๆ) — บนมือถือ Android ขั้นนี้ช้าได้หลายวินาทีถึงเป็นนาทีสำหรับไฟล์ใหญ่มาก
+        // ถ้าไม่โชว์อะไรเลยจะดูเหมือนค้างที่ 100% ทั้งที่กำลังทำงานอยู่จริง
+        updateProgress('กำลังบันทึกไฟล์ลงเครื่อง... (ขั้นตอนนี้อาจใช้เวลาอีกสักครู่)', null);
         await stream.writable.close();
 
         resultFilename = stream.handle.name;
@@ -421,25 +438,33 @@ function init() {
       runError.hidden = false;
       runError.textContent = `${error.message} — ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ`;
       setApplyPhase('patch');
+    } finally {
+      await releaseWakeLock();
     }
   }
 
   // ── แถบความคืบหน้า ────────────────────────────────────────
+  // ใช้ตัวควบคุมเดียวกัน 2 ชุด — ชุดหนึ่งอยู่ในป๊อปอัป "ไฟล์นี้ใช้ได้" (โชว์ตอนกำลังแปะ)
+  // อีกชุดอยู่ใต้ช่องเลือกไฟล์เลย (โชว์ตอนกำลังตรวจ SHA1 ก่อนป๊อปอัปนั้นจะเปิดด้วยซ้ำ)
+
+  const patchProgress = makeProgressController(progressBox, progressLabel, progressBar, progressFill);
+  const fileCheckProgress = makeProgressController(
+    fileCheckProgressBox,
+    fileCheckProgressLabel,
+    fileCheckProgressBar,
+    fileCheckProgressFill
+  );
 
   function showProgress(label, ratio) {
-    progressBox.hidden = false;
-    updateProgress(label, ratio);
+    patchProgress.show(label, ratio);
   }
 
   function updateProgress(label, ratio) {
-    const known = typeof ratio === 'number' && Number.isFinite(ratio);
-    progressBar.classList.toggle('patch-progress__bar--indeterminate', !known);
-    progressFill.style.width = known ? `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%` : '';
-    progressLabel.textContent = known ? `${label} ${Math.round(ratio * 100)}%` : label;
+    patchProgress.update(label, ratio);
   }
 
   function hideProgress() {
-    progressBox.hidden = true;
+    patchProgress.hide();
   }
 
   /**
@@ -635,3 +660,58 @@ function formatSize(bytes) {
 }
 
 const nextFrame = () => new Promise((resolve) => requestAnimationFrame(() => resolve()));
+
+/** สร้างตัวควบคุมแถบความคืบหน้าจากชุด element (label/bar/fill) — ใช้ซ้ำได้กับแถบหลายจุดในหน้า
+   เดียวกันโดยไม่ต้องก็อปโค้ดตรรกะ (% รู้ค่า vs ไม่รู้ค่า) ซ้ำ */
+function makeProgressController(box, label, bar, fill) {
+  return {
+    show(text, ratio) {
+      box.hidden = false;
+      this.update(text, ratio);
+    },
+    update(text, ratio) {
+      const known = typeof ratio === 'number' && Number.isFinite(ratio);
+      bar.classList.toggle('patch-progress__bar--indeterminate', !known);
+      fill.style.width = known ? `${Math.round(Math.min(1, Math.max(0, ratio)) * 100)}%` : '';
+      label.textContent = known ? `${text} ${Math.round(ratio * 100)}%` : text;
+    },
+    hide() {
+      box.hidden = true;
+    },
+  };
+}
+
+// ── กันจอดับระหว่างงานที่ใช้เวลานาน (ตรวจ SHA1 / แปะแพตช์ไฟล์ใหญ่) ─────────
+//
+// เจอจริงบน Android: ระหว่างรอ (ไม่ได้แตะจอ) มือถือจะดับจอเองตามเวลาที่ตั้งไว้ พอเปิดจอ
+// กลับมาหน้าเว็บค้าง ต้องรีเฟรชแล้วทำใหม่ทั้งหมด — Screen Wake Lock API กันจอดับอัตโนมัติ
+// ระหว่างช่วงที่ยังทำงานอยู่ได้ตรงๆ เบราว์เซอร์ที่ไม่รองรับ (เช่น Firefox บางรุ่น) จะข้ามเงียบๆ
+// ไม่ใช่ error ต้องจัดการ เพราะไม่กันจอดับก็แค่กลับไปเสี่ยงเจอปัญหาเดิม ไม่ใช่ฟีเจอร์จำเป็น
+let wakeLock = null;
+let wakeLockWanted = false;
+
+async function acquireWakeLock() {
+  wakeLockWanted = true;
+  if (!('wakeLock' in navigator)) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+  } catch {
+    wakeLock = null; // เช่นแบตต่ำ/เบราว์เซอร์ปฏิเสธ — ปล่อยผ่าน ไม่ใช่ error ที่ต้องหยุดงานหลัก
+  }
+}
+
+async function releaseWakeLock() {
+  wakeLockWanted = false;
+  if (wakeLock) {
+    await wakeLock.release().catch(() => {});
+    wakeLock = null;
+  }
+}
+
+// wake lock ถูกปล่อยอัตโนมัติทุกครั้งที่แท็บถูกซ่อน (สลับแอป/ล็อกจอ) ตามสเปก — พอกลับมาเห็น
+// หน้าเว็บอีกครั้งระหว่างที่งานยังไม่เสร็จ ต้องขอใหม่เอง ไม่งั้นจอจะดับได้อีกรอบถัดไป
+document.addEventListener('visibilitychange', () => {
+  if (wakeLockWanted && document.visibilityState === 'visible') {
+    acquireWakeLock();
+  }
+});
