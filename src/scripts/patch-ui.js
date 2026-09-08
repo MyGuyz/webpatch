@@ -14,6 +14,15 @@ const BIG_FILE_BYTES = 300 * 1024 * 1024;
 /**
  * ไฟล์ที่ใหญ่กว่านี้ (ระดับแผ่น PS2 ขึ้นไป) ต้องถือทั้งไฟล์ต้นฉบับ + ไฟล์ผลลัพธ์ไว้ใน
  * หน่วยความจำพร้อมกัน — เตือนเรื่องแรมให้ชัดกว่าข้อความไฟล์ใหญ่ทั่วไป (ดู ADR-016)
+ *
+ * ใช้ค่าเดียวกันนี้เป็นจุดตัดสินใจ "ต้องใช้ทางสตรีมไหม" ด้วย (ดู useStreamingFor ด้านล่าง)
+ * เพราะนอกจากกินแรมเยอะแล้ว ดาวน์โหลดผ่าน Blob URL ปกติ (`URL.createObjectURL` + คลิกลิงก์)
+ * ยังเสี่ยงพังตรงๆ ที่ขนาดระดับนี้ด้วย — เจอจริงบน**คอมพิวเตอร์** (ไม่ใช่แค่มือถือ) กับไฟล์ RE4
+ * 4.4GB: กดดาวน์โหลด เลือกที่เก็บไฟล์เสร็จ ระบบขึ้น error คล้ายปัญหาเน็ตทันที ทั้งที่ไม่เกี่ยวกับ
+ * เน็ตเลย เพราะ Chrome เช็คล่วงหน้าว่าไฟล์ใหญ่เกินจะรองรับดาวน์โหลดผ่าน Blob ได้ไหมแล้วปฏิเสธ
+ * ทันทีถ้าไม่ไหว (พังลักษณะนี้เกิดขึ้นกับผู้ใช้หลายคนตรงกัน ไม่ใช่ปัญหาเน็ตของใครคนใดคนหนึ่ง —
+ * ดู ADR-018) ทางแก้คือใช้ทางเขียนไฟล์ลงดิสก์ตรงๆ แบบเดียวกับที่ทำให้ Android (ADR-017) แทน
+ * ไม่ว่าจะเป็นมือถือหรือคอมพิวเตอร์ก็ตาม ถ้าเบราว์เซอร์รองรับ
  */
 const VERY_BIG_FILE_BYTES = 1.5 * 1024 * 1024 * 1024;
 
@@ -334,8 +343,25 @@ function init() {
     return selectedGame?.patch_format === 'ppf' && supportsStreamingSave();
   }
 
+  /**
+   * ต้องใช้ทางสตรีม (เขียนไฟล์ลงดิสก์ตรงๆ) แทนทาง Blob URL ปกติไหม — มี 2 เหตุผลแยกกัน
+   * ที่นำไปสู่ทางเดียวกัน (ดู ADR-017/ADR-018):
+   *   1. มือถือ + ไฟล์ใหญ่กว่า MOBILE_UNSAFE_BYTES — กันแรมมือถือไม่พอ (ธรณีประตูต่ำกว่า
+   *      เพราะมือถือมีแรมน้อยกว่าคอมพิวเตอร์มาก)
+   *   2. อุปกรณ์ไหนก็ได้ + ไฟล์ใหญ่กว่า VERY_BIG_FILE_BYTES — กัน Blob URL ดาวน์โหลดพัง
+   *      (เจอจริงบนคอมพิวเตอร์กับไฟล์ 4GB+ — ธรณีประตูสูงกว่าเพราะเป็นเพดานของเบราว์เซอร์เอง
+   *      ไม่ใช่เพดานแรมเครื่อง)
+   * ไม่ว่าจะเข้าเงื่อนไขไหน ถ้าเบราว์เซอร์ไม่รองรับ (canUseStreamingSave() เป็น false) ก็ใช้
+   * ทางเดิมต่อไปเสมอ — ไม่มีทางเลือกอื่น
+   */
+  function useStreamingFor(fileSize) {
+    if (!canUseStreamingSave()) return false;
+    if (isMobileDevice() && fileSize > MOBILE_UNSAFE_BYTES) return true;
+    return fileSize > VERY_BIG_FILE_BYTES;
+  }
+
   function bigFileNoteText(fileSize) {
-    if (isMobileDevice() && fileSize > MOBILE_UNSAFE_BYTES && canUseStreamingSave()) {
+    if (useStreamingFor(fileSize)) {
       return 'ไฟล์นี้ใหญ่มาก — เบราว์เซอร์รุ่นนี้รองรับการเขียนไฟล์ลงดิสก์ตรงๆ ระหว่างแปะ ไม่ต้องพึ่งแรมเยอะเหมือนปกติ ' +
         'พอกดแปะจะมีกล่องให้เลือกที่เก็บไฟล์ก่อนเริ่ม (คล้าย "Save As") เลือกแล้วรอจนเสร็จได้เลย';
     }
@@ -350,7 +376,7 @@ function init() {
   async function runPatch() {
     if (!selectedGame || !sourceFile) return;
 
-    const useStreaming = isMobileDevice() && sourceFile.size > MOBILE_UNSAFE_BYTES && canUseStreamingSave();
+    const useStreaming = useStreamingFor(sourceFile.size);
 
     sfxConfirm();
     runError.hidden = true;
