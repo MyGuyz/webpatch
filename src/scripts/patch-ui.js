@@ -16,6 +16,15 @@ const BIG_FILE_BYTES = 300 * 1024 * 1024;
 const VERY_BIG_FILE_BYTES = 1.5 * 1024 * 1024 * 1024;
 
 /**
+ * มือถือส่วนใหญ่มีแรมไม่พอสำหรับไฟล์ใหญ่กว่านี้ (ต้องใช้ ~2 เท่าของขนาดไฟล์ระหว่างแปะ —
+ * ดู ADR-016) เจอจริงบน iPhone 13 Pro: พอแรมพุ่งกลางคัน Safari ปิดแท็บทิ้งแล้วเปิดหน้าเว็บ
+ * ใหม่ให้เองเงียบๆ (ดูเหมือนเว็บพัง/รีเซ็ตเอง) โดยไม่มีข้อความ error ใดๆ ให้เห็นเลย
+ * จึงกันไว้ก่อนด้วยการเตือนชัดๆ แทนที่จะปล่อยให้ไปเจอเองแบบงงๆ — ยังกดลองต่อได้ถ้าอยากเสี่ยง
+ * (เผื่อกรณีมือถือ/แท็บเล็ตรุ่นแรงจริงๆ ที่อาจรอดได้)
+ */
+const MOBILE_UNSAFE_BYTES = 1024 * 1024 * 1024;
+
+/**
  * URL ของไฟล์ผลลัพธ์ (blob) อยู่นอก init() เพราะเว็บนี้เปลี่ยนหน้าแบบ SPA
  * (ดู astro:page-load ด้านล่าง) เอกสารเดิมไม่ได้ถูกทิ้งตอนเปลี่ยนหน้า
  * ถ้าไม่ปล่อยตรงนี้ตอนกลับมาหน้านี้ใหม่ blob เก่าจะค้างกินแรมไปตลอด session
@@ -51,6 +60,11 @@ function init() {
   const fileMsgboxZip = el('file-msgbox-zip');
   const msgboxZipRetry = el('msgbox-zip-retry');
   const msgboxZipClose = el('msgbox-zip-close');
+  const fileMsgboxMobile = el('file-msgbox-mobile');
+  const msgboxMobileSize = el('msgbox-mobile-size');
+  const msgboxMobileRetry = el('msgbox-mobile-retry');
+  const msgboxMobileClose = el('msgbox-mobile-close');
+  const msgboxMobileProceed = el('msgbox-mobile-proceed');
   const fileMsgboxOk = el('file-msgbox-ok');
   const msgboxOkClose = el('msgbox-ok-close');
   const bigFileNote = el('patch-big-file-note');
@@ -180,10 +194,11 @@ function init() {
     closePatchDoneModal();
   }
 
-  /** สลับป๊อปอัปสถานะไฟล์ 3 แบบ (error/zip/ok) — โชว์ทีละอันตามผลตรวจไฟล์ล่าสุด */
+  /** สลับป๊อปอัปสถานะไฟล์ 4 แบบ (error/zip/mobile-toobig/ok) — โชว์ทีละอันตามผลตรวจไฟล์ล่าสุด */
   function showFileStatus(kind) {
     fileMsgbox.classList.toggle('open', kind === 'error');
     fileMsgboxZip.classList.toggle('open', kind === 'zip');
+    fileMsgboxMobile.classList.toggle('open', kind === 'mobile-toobig');
     fileMsgboxOk.classList.toggle('open', kind === 'ok');
   }
 
@@ -246,6 +261,20 @@ function init() {
       return;
     }
 
+    // เช็คก่อนเสียเวลาแฮช SHA1 ไฟล์หลาย GB บนเครื่องที่ไม่มีทางแปะสำเร็จอยู่แล้ว
+    if (isMobileDevice() && file.size > MOBILE_UNSAFE_BYTES) {
+      sfxError();
+      msgboxMobileSize.textContent = formatSize(file.size);
+      showFileStatus('mobile-toobig');
+      return;
+    }
+
+    await validateAndAcceptFile(file);
+  }
+
+  /** ตรวจ SHA1 (ถ้าเกมกำหนดไว้) แล้วเข้าสถานะ "ไฟล์นี้ใช้ได้" — แยกออกมาเพราะเรียกได้
+     2 ทาง คือไหลต่อจาก handleFileChosen ปกติ หรือกดยืนยันจากป๊อปอัปเตือนเรื่องมือถือ */
+  async function validateAndAcceptFile(file) {
     if (selectedGame?.source_sha1) {
       fileSummary.textContent = `${file.name} · ${formatSize(file.size)} · กำลังตรวจไฟล์...`;
 
@@ -452,6 +481,21 @@ function init() {
     sfxCancel();
     showFileStatus('none');
   });
+  msgboxMobileRetry.addEventListener('click', () => {
+    sfxTick();
+    resetFileState();
+    fileInput.click();
+  });
+  msgboxMobileClose.addEventListener('click', () => {
+    sfxCancel();
+    showFileStatus('none');
+  });
+  msgboxMobileProceed.addEventListener('click', () => {
+    sfxConfirm();
+    showFileStatus('none');
+    const file = fileInput.files?.[0];
+    if (file) validateAndAcceptFile(file);
+  });
   msgboxOkClose.addEventListener('click', () => {
     sfxCancel();
     showFileStatus('none');
@@ -496,6 +540,15 @@ function isZipFile(bytes, name) {
     bytes[1] === 0x4b &&
     (bytes[2] === 0x03 || bytes[2] === 0x05 || bytes[2] === 0x07)
   );
+}
+
+/**
+ * ตรวจแบบหยาบๆ ว่าเป็นมือถือไหม (ไม่รวม iPad ที่ Safari ส่ง user agent เป็น "Macintosh"
+ * โดยดีไซน์ตั้งแต่ iPadOS 13 — ปล่อยผ่านไปเพราะ iPad ส่วนใหญ่แรมเหลือเฟือกว่าโทรศัพท์มาก)
+ * ใช้แค่เตือนก่อนไฟล์ใหญ่ ไม่ใช่ด่านที่ต้องแม่นยำ 100%
+ */
+function isMobileDevice() {
+  return /Android|iPhone|iPod/i.test(navigator.userAgent);
 }
 
 function thaiFileName(name) {

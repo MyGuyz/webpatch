@@ -102,7 +102,14 @@ const consolesWithGames = consoles.filter((c) =>
           <div class="cart__body">
             <div class="field">
               <span class="field__label">ไฟล์เกมต้นฉบับ</span>
-              <input class="sr-only-file" type="file" id="source-file" accept="application/octet-stream" />
+              {
+                /* ไม่ใส่ accept แคบๆ (เดิม accept="application/octet-stream") เพราะไฟล์ ROM/ISO
+                   หลายรูปแบบ (.iso .bin .smc .gba .nds .cso ฯลฯ) ไม่มี MIME type ที่ระบบปฏิบัติการ
+                   รู้จักแน่ชัด บางเครื่อง (เจอจริงบน Windows กับไฟล์ .iso) ตัวเลือกไฟล์เลยกรองจน
+                   ไม่เห็นไฟล์ที่ต้องการเลย ต้องพึ่งการตรวจสอบไฟล์ของเว็บเอง (เช็ค zip/SHA1) เป็น
+                   ด่านจริงแทน ไม่ใช่ตัวกรองของเบราว์เซอร์ */
+              }
+              <input class="sr-only-file" type="file" id="source-file" />
               <label class="dropzone" for="source-file" id="dropzone-label">
                 <span class="dropzone__icon" aria-hidden="true">📁</span>
                 <span>กดเลือกไฟล์ของคุณ</span>
@@ -163,6 +170,32 @@ const consolesWithGames = consoles.filter((c) =>
               </p>
               <div class="msgbox__actions">
                 <button class="btn btn--small" type="button" id="msgbox-zip-retry" data-sfx="none">🔁 เลือกไฟล์ใหม่</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="overlay" id="file-msgbox-mobile">
+          <div class="msgbox msgbox--error overlay__card">
+            <div class="msgbox__head">
+              <span class="msgbox__icon">📱</span>
+              <span>ไฟล์นี้ใหญ่เกินกว่ามือถือจะแปะไหว</span>
+              <button class="close-x" id="msgbox-mobile-close" type="button" aria-label="ปิด" data-sfx="none">X</button>
+            </div>
+            <div class="msgbox__body">
+              <p>
+                ไฟล์นี้ (<strong id="msgbox-mobile-size"></strong>) ต้องใช้แรมมากกว่าที่มือถือส่วนใหญ่มีจริงๆ
+                ระหว่างแปะ — ตัวเบราว์เซอร์จะ<strong>ปิดหน้าเว็บทิ้งแล้วเปิดใหม่เองกลางคัน</strong>
+                (ไม่ใช่เว็บพัง แต่แปะไม่มีทางเสร็จ)
+              </p>
+              <div class="msgbox__todo">
+                <p>แนะนำให้ใช้คอมพิวเตอร์แทนมือถือสำหรับไฟล์ขนาดนี้ครับ</p>
+              </div>
+              <div class="msgbox__actions">
+                <button class="btn btn--small" type="button" id="msgbox-mobile-retry" data-sfx="none">🔁 เลือกไฟล์ใหม่</button>
+                <button class="btn btn--ghost btn--small" type="button" id="msgbox-mobile-proceed" data-sfx="none">
+                  ลองแปะต่อเลย (เสี่ยงพัง)
+                </button>
               </div>
             </div>
           </div>
