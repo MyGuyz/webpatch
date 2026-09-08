@@ -13,38 +13,40 @@
  * การ clone ก่อนเขียนจะต้องมีทั้งต้นฉบับและสำเนาอยู่พร้อมกันชั่วขณะ กินแรมพีคเป็น ~2 เท่าของ
  * ขนาดไฟล์โดยไม่จำเป็น ทั้งที่ในการใช้งานจริง (patch-ui.js) ตัว source ที่ส่งเข้ามาถูกสร้างขึ้น
  * มาเพื่อแปะแพตช์ครั้งนี้ครั้งเดียวอยู่แล้ว ไม่มีใครต้องใช้ค่าดิบต่อ)
+ *
+ * ตัวแกะเรคคอร์ด (parsePPFRecords) แยกออกมาจากตัวเขียนทับ (applyPPF) เพื่อให้ทางสตรีม
+ * (streamApplyPPF ใน stream-ppf.js — ใช้กับ Android ผ่าน File System Access API เพราะ
+ * Safari ไม่รองรับ API นี้เลย ดู ADR-017) เรียกใช้ตรรกะแกะไฟล์เดียวกันได้ ไม่ต้องเขียนซ้ำ
+ * สองที่จนเสี่ยงเพี้ยนคนละแบบ
  */
 
 const DESCRIPTION_LENGTH = 50;
 const BLOCK_CHECK_LENGTH = 1024;
 
-export function applyPPF(source, patch) {
+/**
+ * แกะ header ของไฟล์ .ppf แล้วคืนรายการเรคคอร์ด { offset, data } เรียงจาก offset น้อยไปมาก
+ * (สเปกไม่ได้การันตีลำดับ แต่ตัวสร้างแพตช์ทั่วไปเรียงมาให้อยู่แล้ว — เรียงซ้ำเองให้ชัวร์)
+ *
+ * ไม่ตรวจ "เขียนเลยท้ายไฟล์ต้นฉบับ" ในนี้ เพราะตอนแกะยังไม่รู้ขนาดไฟล์ต้นฉบับจริง
+ * (ฝั่งเรียกใช้ที่รู้ขนาดไฟล์แล้วต้องตรวจเอง)
+ */
+export function parsePPFRecords(patch) {
   const version = readVersion(patch);
-  const out = source;
-
-  let pos;
+  let pos = 5 + 1 + DESCRIPTION_LENGTH;
   let offsetSize;
   let hasUndoData = false;
+  let expectedSourceSize = null;
 
   if (version === 1) {
     // magic(5) + encoding(1) + description(50)
-    pos = 5 + 1 + DESCRIPTION_LENGTH;
     offsetSize = 4;
   } else if (version === 2) {
     // magic(5) + encoding(1) + description(50) + ขนาดไฟล์ต้นฉบับ(4) + block check(1024)
-    pos = 5 + 1 + DESCRIPTION_LENGTH;
-    const expectedSize = readUint32LE(patch, pos);
+    expectedSourceSize = readUint32LE(patch, pos);
     pos += 4 + BLOCK_CHECK_LENGTH;
     offsetSize = 4;
-
-    if (source.length !== expectedSize) {
-      throw new Error(
-        `ขนาดไฟล์ต้นฉบับไม่ตรงกับที่แพตช์ต้องการ (ต้องการ ${expectedSize} ไบต์ แต่ได้ ${source.length} ไบต์)`
-      );
-    }
   } else {
     // magic(5) + encoding(1) + description(50) + imagetype(1) + blockcheck(1) + undo(1) + dummy(1)
-    pos = 5 + 1 + DESCRIPTION_LENGTH;
     const blockCheckPresent = patch[pos + 1] === 1;
     hasUndoData = patch[pos + 2] === 1;
     pos += 4;
@@ -53,6 +55,7 @@ export function applyPPF(source, patch) {
   }
 
   const end = findRecordsEnd(patch, version);
+  const records = [];
 
   while (pos < end) {
     if (pos + offsetSize + 1 > end) {
@@ -67,17 +70,34 @@ export function applyPPF(source, patch) {
       throw new Error('ไฟล์แพตช์ PPF ขาดกลางคัน (ข้อมูลไม่ครบ)');
     }
 
-    if (offset + size > out.length) {
-      throw new Error(
-        'แพตช์พยายามเขียนเลยท้ายไฟล์ต้นฉบับ — น่าจะใช้ไฟล์เกมผิดรุ่นหรือผิดรูปแบบการ dump'
-      );
-    }
-
-    out.write(offset, patch.subarray(pos, pos + size));
+    records.push({ offset, data: patch.subarray(pos, pos + size) });
     pos += size;
 
     // PPF3.0 ที่เปิด undo จะแนบข้อมูลเดิมไว้ท้ายเรคคอร์ด สำหรับย้อนกลับ — เราข้ามไป
     if (hasUndoData) pos += size;
+  }
+
+  records.sort((a, b) => a.offset - b.offset);
+  return { version, expectedSourceSize, records };
+}
+
+export function applyPPF(source, patch) {
+  const { expectedSourceSize, records } = parsePPFRecords(patch);
+
+  if (expectedSourceSize != null && source.length !== expectedSourceSize) {
+    throw new Error(
+      `ขนาดไฟล์ต้นฉบับไม่ตรงกับที่แพตช์ต้องการ (ต้องการ ${expectedSourceSize} ไบต์ แต่ได้ ${source.length} ไบต์)`
+    );
+  }
+
+  const out = source;
+  for (const rec of records) {
+    if (rec.offset + rec.data.length > out.length) {
+      throw new Error(
+        'แพตช์พยายามเขียนเลยท้ายไฟล์ต้นฉบับ — น่าจะใช้ไฟล์เกมผิดรุ่นหรือผิดรูปแบบการ dump'
+      );
+    }
+    out.write(rec.offset, rec.data);
   }
 
   return out;

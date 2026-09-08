@@ -1,7 +1,9 @@
 import { applyPatch } from '../patcher/index.js';
+import { streamApplyPPF } from '../patcher/stream-ppf.js';
 import { sha1HexOfBlob } from '../patcher/sha1.js';
 import { BigBuffer } from '../patcher/big-buffer.js';
 import { pickRandomShopeeLink } from '../lib/shopee-links.js';
+import { supportsStreamingSave, createSaveStream } from '../lib/save-file-stream.js';
 import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError, sfxCancel } from '../lib/sfx.js';
 
 const el = (id) => document.getElementById(id);
@@ -81,6 +83,9 @@ function init() {
   const patchDoneCoverArt = patchDoneModal.querySelector('.patch-done__cover-art');
   const patchDoneTitle = el('patch-done-title');
   const patchDoneFilename = el('patch-done-filename');
+  const patchDoneStage1Text = el('patch-done-stage1-text');
+  const stage1TextDefault = patchDoneStage1Text.textContent;
+  const stage1TextStreamed = 'ไฟล์นี้ถูกบันทึกไปยังตำแหน่งที่คุณเลือกไว้ตอนกดแปะแล้วโดยตรง';
 
   if (resultUrl) {
     URL.revokeObjectURL(resultUrl);
@@ -261,8 +266,10 @@ function init() {
       return;
     }
 
-    // เช็คก่อนเสียเวลาแฮช SHA1 ไฟล์หลาย GB บนเครื่องที่ไม่มีทางแปะสำเร็จอยู่แล้ว
-    if (isMobileDevice() && file.size > MOBILE_UNSAFE_BYTES) {
+    // เช็คก่อนเสียเวลาแฮช SHA1 ไฟล์หลาย GB บนเครื่องที่ไม่มีทางแปะสำเร็จอยู่แล้ว —
+    // ยกเว้นกรณีที่ใช้ทางสตรีมได้ (Android Chrome/Edge + แพตช์ฟอร์แมต PPF — ดู ADR-017)
+    // เพราะทางนั้นไม่ต้องถือทั้งไฟล์ไว้ในแรมเลย ไม่เจอปัญหาแรมไม่พอแบบทางเดิม
+    if (isMobileDevice() && file.size > MOBILE_UNSAFE_BYTES && !canUseStreamingSave()) {
       sfxError();
       msgboxMobileSize.textContent = formatSize(file.size);
       showFileStatus('mobile-toobig');
@@ -304,12 +311,27 @@ function init() {
 
     sourceFile = file;
     bigFileNote.hidden = file.size <= BIG_FILE_BYTES;
-    bigFileNote.textContent =
-      file.size > VERY_BIG_FILE_BYTES
-        ? 'ไฟล์นี้ใหญ่มาก (ระดับแผ่น PS2 ขึ้นไป) ต้องใช้แรมค่อนข้างเยอะระหว่างแปะ แนะนำปิดแท็บ/โปรแกรมอื่นก่อน และใช้คอมพิวเตอร์ (ไม่ใช่มือถือ) อย่าเพิ่งปิดแท็บระหว่างแปะนะครับ'
-        : 'ไฟล์นี้ค่อนข้างใหญ่ อาจใช้เวลาสักพัก อย่าเพิ่งปิดแท็บระหว่างแปะนะครับ';
+    bigFileNote.textContent = bigFileNoteText(file.size);
     sfxConfirm();
     showFileStatus('ok');
+  }
+
+  /** ตัวเลือกทางสตรีม (ADR-017) ใช้ได้ก็ต่อเมื่อเบราว์เซอร์รองรับ File System Access API
+     และแพตช์เกมนี้เป็น PPF เท่านั้น (IPS/BPS ยังไม่ได้เขียนทางสตรีมให้ — ไม่จำเป็นเพราะ
+     ใช้กับ ROM เล็กเสมอ ไม่เจอปัญหาแรมไม่พอ) */
+  function canUseStreamingSave() {
+    return selectedGame?.patch_format === 'ppf' && supportsStreamingSave();
+  }
+
+  function bigFileNoteText(fileSize) {
+    if (isMobileDevice() && fileSize > MOBILE_UNSAFE_BYTES && canUseStreamingSave()) {
+      return 'ไฟล์นี้ใหญ่มาก — เบราว์เซอร์รุ่นนี้รองรับการเขียนไฟล์ลงดิสก์ตรงๆ ระหว่างแปะ ไม่ต้องพึ่งแรมเยอะเหมือนปกติ ' +
+        'พอกดแปะจะมีกล่องให้เลือกที่เก็บไฟล์ก่อนเริ่ม (คล้าย "Save As") เลือกแล้วรอจนเสร็จได้เลย';
+    }
+    if (fileSize > VERY_BIG_FILE_BYTES) {
+      return 'ไฟล์นี้ใหญ่มาก (ระดับแผ่น PS2 ขึ้นไป) ต้องใช้แรมค่อนข้างเยอะระหว่างแปะ แนะนำปิดแท็บ/โปรแกรมอื่นก่อน และใช้คอมพิวเตอร์ (ไม่ใช่มือถือ) อย่าเพิ่งปิดแท็บระหว่างแปะนะครับ';
+    }
+    return 'ไฟล์นี้ค่อนข้างใหญ่ อาจใช้เวลาสักพัก อย่าเพิ่งปิดแท็บระหว่างแปะนะครับ';
   }
 
   // ── แปะแพตช์ ──────────────────────────────────────────────
@@ -317,8 +339,27 @@ function init() {
   async function runPatch() {
     if (!selectedGame || !sourceFile) return;
 
+    const useStreaming = isMobileDevice() && sourceFile.size > MOBILE_UNSAFE_BYTES && canUseStreamingSave();
+
     sfxConfirm();
     runError.hidden = true;
+
+    // ขอที่เก็บไฟล์ก่อนเริ่มทำอะไรทั้งนั้น (ต้องเรียกตอนยังอยู่ในจังหวะ user gesture จากการ
+    // คลิกปุ่มโดยตรง เรียกทีหลังหลัง await เครือข่ายไปแล้วบางเบราว์เซอร์จะปฏิเสธ) — ผู้ใช้
+    // กดยกเลิกได้ ไม่ใช่ error จริง แค่กลับไปหน้าเดิมเงียบๆ
+    let stream = null;
+    if (useStreaming) {
+      try {
+        stream = await createSaveStream(thaiFileName(sourceName));
+      } catch (error) {
+        if (error?.name === 'AbortError') return;
+        sfxError();
+        runError.hidden = false;
+        runError.textContent = `เปิดกล่องเลือกที่เก็บไฟล์ไม่สำเร็จ: ${error.message}`;
+        return;
+      }
+    }
+
     setApplyPhase('running');
     showProgress('กำลังโหลดไฟล์แพตช์...', 0);
 
@@ -333,6 +374,22 @@ function init() {
       const patchBytes = await readResponseWithProgress(response, (loaded, total) => {
         updateProgress('กำลังโหลดไฟล์แพตช์...', total ? loaded / total : null);
       });
+
+      if (useStreaming) {
+        // อ่านไฟล์ต้นฉบับทีละก้อนแล้วเขียนผลลัพธ์ลงไฟล์ที่เลือกไว้ทันที ไม่ต้องรวมทั้งไฟล์
+        // ไว้ในแรมเลยสักครั้งเดียว (ต่างจากทาง BigBuffer ด้านล่าง) — ดู ADR-017
+        await streamApplyPPF(sourceFile, patchBytes, stream.writable, (written, total) => {
+          updateProgress('กำลังแปะและบันทึกไฟล์...', total ? written / total : null);
+        });
+        await stream.writable.close();
+
+        resultFilename = stream.handle.name;
+        hideProgress();
+        sfxSuccess();
+        setApplyPhase('patch'); // บันทึกเสร็จแล้วในตัว ไม่ต้องกดดาวน์โหลดซ้ำ พร้อมแปะไฟล์ถัดไปได้เลย
+        showPatchDoneGuide({ streamed: true });
+        return;
+      }
 
       // อ่านไฟล์ต้นฉบับทีละก้อนเข้า BigBuffer แทนที่จะอ่านทั้งไฟล์เป็น ArrayBuffer เดียว
       // (ตัวแปะแพตช์ทั้ง 3 รูปแบบรับ BigBuffer ตั้งแต่รองรับไฟล์เกิน ~2GB — ดู ADR-016)
@@ -359,6 +416,7 @@ function init() {
       setApplyPhase('download');
     } catch (error) {
       hideProgress();
+      if (stream) await stream.writable.close().catch(() => {});
       sfxError();
       runError.hidden = false;
       runError.textContent = `${error.message} — ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ`;
@@ -419,7 +477,8 @@ function init() {
     return result;
   }
 
-  /** ดาวน์โหลดไฟล์ผลลัพธ์ ปิดป๊อปอัป "ไฟล์นี้ใช้ได้" แล้วเด้งป๊อปอัปคู่มือเปิดเล่นต่อทันที */
+  /** ดาวน์โหลดไฟล์ผลลัพธ์ (ทางเดิม — ยังไม่ได้บันทึกไฟล์ไว้ที่ไหนจนกว่าจะกดปุ่มนี้)
+     แล้วเด้งป๊อปอัปคู่มือเปิดเล่นต่อทันที */
   function downloadAndShowGuide() {
     if (!resultUrl || !selectedGame) return;
     sfxTick();
@@ -429,8 +488,19 @@ function init() {
     link.download = resultFilename;
     link.click();
 
+    showPatchDoneGuide({ streamed: false });
+  }
+
+  /**
+   * เด้งป๊อปอัปคู่มือเปิดเล่นต่อ — ใช้ร่วมกัน 2 ทาง: ทางเดิม (ดาวน์โหลดผ่านปุ่มแล้วเรียกต่อ)
+   * และทางสตรีม (บันทึกเสร็จไปแล้วระหว่างแปะ ไม่มีปุ่มดาวน์โหลดแยก) — ข้อความ STAGE 1
+   * ต่างกันตามทางที่ใช้ เพราะทางสตรีมไม่ได้ไปโผล่ที่โฟลเดอร์ Downloads เสมอไป (อยู่ตรงที่
+   * ผู้ใช้เลือกไว้เองตอนกดแปะ)
+   */
+  function showPatchDoneGuide({ streamed }) {
     showFileStatus('none');
 
+    patchDoneStage1Text.textContent = streamed ? stage1TextStreamed : stage1TextDefault;
     patchDoneTitle.textContent = selectedGame.title;
     patchDoneFilename.textContent = resultFilename;
     if (selectedGame.cover_url) {
