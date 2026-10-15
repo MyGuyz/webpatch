@@ -28,7 +28,12 @@ const details = [
     <div class="game__cover">
       {
         game.cover_url ? (
-          <img src={game.cover_url} alt={`ปกเกม ${game.title}`} loading="lazy" />
+          <img
+            src={game.cover_url}
+            alt={`ปกเกม ${game.title}`}
+            loading="lazy"
+            onerror="this.style.visibility='hidden'"
+          />
         ) : (
           <PixelIcon name="patch" class="game__cover-art" />
         )

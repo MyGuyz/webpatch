@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { SEED_GAMES, SEED_CONSOLES, SEED_ANNOUNCEMENT, SEED_SHOPEE_LINKS } from './seed-games.js';
+import SNAPSHOT from './snapshot.json';
 
 /**
  * ชั้นข้อมูลของเว็บ
@@ -46,6 +47,36 @@ export function isUsingSeedData() {
   return getClient() === null;
 }
 
+/**
+ * ข้อมูลสำรองตอน Supabase ล่ม (snapshot.json — ก๊อปจากฐานข้อมูลจริงไว้ล่วงหน้า)
+ *
+ * ต.ค. 2026 Supabase แพ็กฟรีล็อกโปรเจกต์ทั้งก้อนเพราะใช้โควต้าเกิน ทุกคำขอตอบ 402
+ * เดิมโค้ด throw ทันทีที่อ่านไม่ได้ เว็บจึงขึ้น 500 ทุกหน้า ทั้งที่ไฟล์แพตช์อยู่บน GitHub
+ * และยังโหลดได้ปกติ ตอนนี้ถ้าอ่านไม่ได้จะใช้ข้อมูลชุดนี้แทน เว็บยังเปิดและแปะแพตช์ได้
+ * (ข้อมูลอาจเก่ากว่าใน /admin — แก้ใน /admin จะยังไม่ขึ้นเว็บจนกว่า Supabase จะกลับมา)
+ */
+function useSnapshot(label, error, value) {
+  console.error(`${label}: ${error.message} — ใช้ข้อมูลสำรองจาก snapshot.json แทน`);
+  return value;
+}
+
+/**
+ * ภาพปกใน Supabase Storage ให้ส่งผ่านตัวกลาง /api/cover ของเราแทน (ดู api/cover/[file].ts)
+ * เพราะโหลดตรงจาก Supabase ทุกครั้งที่มีคนเปิดหน้า คือสิ่งที่กินโควต้า egress จนเต็ม
+ */
+const COVER_PREFIX = '/storage/v1/object/public/game-covers/';
+
+export function coverSrc(url) {
+  if (!url) return url;
+  const at = url.indexOf(COVER_PREFIX);
+  if (at === -1) return url;
+  return `/api/cover/${url.slice(at + COVER_PREFIX.length)}`;
+}
+
+function withCoverProxy(games) {
+  return games.map((game) => ({ ...game, cover_url: coverSrc(game.cover_url) }));
+}
+
 const GAME_FIELDS = `
   id, slug, title, subtitle, status, cover_url, description,
   patch_version, patch_format, patch_url, patch_updated_at,
@@ -63,8 +94,8 @@ export async function getPublishedGames() {
     .eq('is_published', true)
     .order('patch_updated_at', { ascending: false, nullsFirst: false });
 
-  if (error) throw new Error(`อ่านรายการเกมไม่สำเร็จ: ${error.message}`);
-  return data ?? [];
+  if (error) return withCoverProxy(useSnapshot('อ่านรายการเกมไม่สำเร็จ', error, SNAPSHOT.games));
+  return withCoverProxy(data ?? []);
 }
 
 export async function getReadyGames() {
@@ -92,8 +123,10 @@ export async function getVersionsByGame(games) {
       .in('game_id', ids)
       .order('released_at', { ascending: false });
 
-    if (error) throw new Error(`อ่านเวอร์ชันแพตช์ไม่สำเร็จ: ${error.message}`);
-    for (const row of data ?? []) byGame[row.game_id]?.add(row.version);
+    const rows = error
+      ? useSnapshot('อ่านเวอร์ชันแพตช์ไม่สำเร็จ', error, SNAPSHOT.changelogs)
+      : (data ?? []);
+    for (const row of rows) byGame[row.game_id]?.add(row.version);
   }
 
   return Object.fromEntries(Object.entries(byGame).map(([id, set]) => [id, [...set]]));
@@ -112,8 +145,10 @@ export async function getChangelogsByGame(games) {
       .in('game_id', ids)
       .order('released_at', { ascending: false });
 
-    if (error) throw new Error(`อ่านประวัติการอัปเดตไม่สำเร็จ: ${error.message}`);
-    for (const row of data ?? []) byGame[row.game_id]?.push(row);
+    const rows = error
+      ? useSnapshot('อ่านประวัติการอัปเดตไม่สำเร็จ', error, SNAPSHOT.changelogs)
+      : (data ?? []);
+    for (const row of rows) byGame[row.game_id]?.push(row);
   }
 
   return byGame;
@@ -133,7 +168,7 @@ export async function getConsoles() {
     .select('id, name, slug, sort_order')
     .order('sort_order');
 
-  if (error) throw new Error(`อ่านรายการเครื่องเล่นไม่สำเร็จ: ${error.message}`);
+  if (error) return useSnapshot('อ่านรายการเครื่องเล่นไม่สำเร็จ', error, SNAPSHOT.consoles);
   return data ?? [];
 }
 
@@ -149,7 +184,7 @@ export async function getActiveAnnouncement() {
     .limit(1)
     .maybeSingle();
 
-  if (error) throw new Error(`อ่านประกาศไม่สำเร็จ: ${error.message}`);
+  if (error) return useSnapshot('อ่านประกาศไม่สำเร็จ', error, SNAPSHOT.announcement);
   return data;
 }
 
@@ -167,7 +202,7 @@ export async function getShopeeLinks() {
     .select('url')
     .eq('is_active', true);
 
-  if (error) throw new Error(`อ่านลิงก์ Shopee ไม่สำเร็จ: ${error.message}`);
+  if (error) return useSnapshot('อ่านลิงก์ Shopee ไม่สำเร็จ', error, SNAPSHOT.shopee_links);
   return data?.length ? data : SEED_SHOPEE_LINKS;
 }
 
