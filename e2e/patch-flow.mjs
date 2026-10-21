@@ -122,6 +122,7 @@ await check('เลือกเกมแล้วขั้นตอนถัด�
   await page.waitForSelector('#step-file:not([hidden])');
   assert.match(await page.locator('#info-title').textContent(), /Bahamut Lagoon/);
   assert.ok(await page.locator('#game-change').isVisible(), 'ต้องมีปุ่มเปลี่ยนเกม');
+  assert.match(page.url(), /[?&]game=\d+/, 'ลิงก์ต้องบอกเกมที่เลือก');
   assert.equal(await page.locator('#game-list .pick:visible').count(), 1, 'รายการต้องยุบเหลือเกมที่เลือก');
 });
 

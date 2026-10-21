@@ -145,6 +145,13 @@ function init() {
     showGame(game);
     pickerOpen = !game;
     renderPicker();
+
+    // ใส่เกมที่เลือกลงลิงก์ (/patch?game=13) แบบเดียวกับตัวกรองหน้าแรก คัดลอกลิงก์ไปแชร์
+    // หรือกดรีเฟรชแล้วยังอยู่ที่เกมเดิม — replaceState ไม่เพิ่มประวัติ กดย้อนกลับจะไม่วนอยู่หน้านี้
+    const url = new URL(location.href);
+    if (game) url.searchParams.set('game', String(game.id));
+    else url.searchParams.delete('game');
+    history.replaceState(history.state, '', url);
   }
 
   function showGame(game) {

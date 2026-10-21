@@ -92,11 +92,26 @@ const details = [
        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) ให้คอลัมน์เดียวกว้างเต็มแถว
        ถ้าไม่มี max-width กำกับไว้ ภาพปกสี่เหลี่ยมจัตุรัส (aspect-ratio: 1/1) จะโตตามจนดูแปลก */
     max-width: 420px;
+    width: 100%;
+    min-width: 0;
   }
 
   .game__tags {
     display: inline-flex;
     gap: 6px;
+    flex: none;
+  }
+
+  /* ป้ายบนการ์ดต้องอยู่บรรทัดเดียวเสมอ การ์ดทุกใบจะได้สูงเท่ากัน
+     ถ้าที่ไม่พอ (การ์ดมีป้าย NEW) ชื่อเครื่องจะถูกตัดท้ายเป็น … แทนการดันการ์ดให้กว้างขึ้น */
+  .game .cart__label {
+    min-width: 0;
+  }
+
+  .game .cart__label > .tag--console {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .cart__body {
