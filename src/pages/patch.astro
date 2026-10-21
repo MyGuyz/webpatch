@@ -55,10 +55,9 @@ const preselectedId = Astro.url.searchParams.get('game');
                   <li data-game-id={g.id}>
                     <button type="button" class="pick" data-pick={g.id} aria-pressed="false">
                       <span class="pick__cover">
-                        {g.cover_url ? (
-                          <img src={g.cover_url} alt="" loading="lazy" onerror="this.style.visibility='hidden'" />
-                        ) : (
-                          <PixelIcon name="patch" class="pick__cover-art" />
+                        <PixelIcon name="patch" class="pick__cover-art" />
+                        {g.cover_url && (
+                          <img src={g.cover_url} alt="" loading="lazy" onerror="this.hidden=true" />
                         )}
                       </span>
                       <span class="pick__text">
@@ -388,6 +387,7 @@ const preselectedId = Astro.url.searchParams.get('game');
   }
 
   .pick__cover {
+    position: relative;
     flex: none;
     display: flex;
     align-items: center;
@@ -400,6 +400,8 @@ const preselectedId = Astro.url.searchParams.get('game');
   }
 
   .pick__cover img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -434,6 +436,7 @@ const preselectedId = Astro.url.searchParams.get('game');
   }
 
   .info__cover {
+    position: relative;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -446,6 +449,8 @@ const preselectedId = Astro.url.searchParams.get('game');
   }
 
   .info__cover img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;
@@ -652,6 +657,8 @@ const preselectedId = Astro.url.searchParams.get('game');
   }
 
   .patch-done__cover img {
+    position: absolute;
+    inset: 0;
     width: 100%;
     height: 100%;
     object-fit: cover;

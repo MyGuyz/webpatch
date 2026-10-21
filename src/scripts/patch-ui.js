@@ -174,7 +174,8 @@ function init() {
       infoCoverImg.src = game.cover_url;
       infoCoverImg.alt = `ปกเกม ${game.title}`;
       infoCoverImg.hidden = false;
-      infoCoverArt.hidden = true;
+      // ภาพแทนปกยังอยู่ใต้รูป — โหลดช้าหรือโหลดไม่ขึ้นก็เห็นตลับเกมพิกเซลแทนไอคอนรูปแตก
+      infoCoverArt.hidden = false;
     } else {
       infoCoverImg.hidden = true;
       infoCoverArt.hidden = false;
@@ -585,7 +586,7 @@ function init() {
       patchDoneCoverImg.src = selectedGame.cover_url;
       patchDoneCoverImg.alt = `ปกเกม ${selectedGame.title}`;
       patchDoneCoverImg.hidden = false;
-      patchDoneCoverArt.hidden = true;
+      patchDoneCoverArt.hidden = false;
     } else {
       patchDoneCoverImg.hidden = true;
       patchDoneCoverArt.hidden = false;
@@ -600,6 +601,14 @@ function init() {
   }
 
   // ── เริ่มทำงาน ────────────────────────────────────────────
+
+  // รูปปกโหลดไม่ขึ้น (เช่น Supabase ล่ม) → ซ่อนรูปทิ้ง เหลือภาพแทนปกที่อยู่ข้างใต้
+  // แทนที่จะโชว์ไอคอนรูปแตกกับข้อความ alt ล้นกรอบ
+  for (const img of [infoCoverImg, patchDoneCoverImg]) {
+    img.addEventListener('error', () => {
+      img.hidden = true;
+    });
+  }
 
   qInput?.addEventListener('input', () => {
     filterState.q = qInput.value;
