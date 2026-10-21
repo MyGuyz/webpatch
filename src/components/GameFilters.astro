@@ -1,0 +1,183 @@
+---
+import { SORTS } from '../lib/game-filter.js';
+
+/**
+ * แถบหาเกม: ช่องค้นหา + ปุ่มเลือกเครื่องเล่น (+ เรียงลำดับ ถ้าเปิด)
+ *
+ * ใช้ทั้งหน้าแรก (คลังเกม) และหน้าแปะแพตช์ ให้หน้าตาและวิธีใช้เหมือนกันทุกที่
+ * ตัวคอมโพเนนต์แค่วาดปุ่ม — สคริปต์ของแต่ละหน้าเป็นคนผูกการทำงานเอง (ดู data-filter-*)
+ */
+interface Props {
+  games: any[];
+  consoles: any[];
+  filters: { q: string; console: string; sort?: string };
+  showSort?: boolean;
+}
+
+const { games, consoles, filters, showSort = false } = Astro.props;
+
+// โชว์เฉพาะเครื่องที่มีเกมจริง พร้อมจำนวน ผู้ใช้จะได้ไม่กดแล้วเจอหน้าว่าง
+const chips = consoles
+  .map((c) => ({ ...c, count: games.filter((g) => g.console?.slug === c.slug).length }))
+  .filter((c) => c.count > 0);
+---
+
+<div class="filters" data-filters>
+  <label class="filters__search">
+    <span class="sr-only">ค้นหาเกม</span>
+    <span class="filters__icon" aria-hidden="true">🔍</span>
+    <input
+      type="search"
+      data-filter-q
+      value={filters.q}
+      placeholder="พิมพ์ชื่อเกม เช่น zelda, resident"
+      autocomplete="off"
+      enterkeyhint="search"
+    />
+  </label>
+
+  {
+    chips.length > 1 && (
+      <div class="chips" role="group" aria-label="เลือกเครื่องเล่น">
+        <button type="button" class="chip" data-filter-console="" aria-pressed={String(!filters.console)}>
+          ทั้งหมด <span class="chip__count">{games.length}</span>
+        </button>
+        {chips.map((c) => (
+          <button
+            type="button"
+            class="chip"
+            data-filter-console={c.slug}
+            aria-pressed={String(filters.console === c.slug)}
+          >
+            {c.name} <span class="chip__count">{c.count}</span>
+          </button>
+        ))}
+      </div>
+    )
+  }
+
+  {
+    showSort && (
+      <label class="filters__sort">
+        <span class="field__label">เรียงตาม</span>
+        <select data-filter-sort>
+          {Object.entries(SORTS).map(([value, label]) => (
+            <option value={value} selected={filters.sort === value}>
+              {label}
+            </option>
+          ))}
+        </select>
+      </label>
+    )
+  }
+</div>
+
+<style>
+  .filters {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .filters__search {
+    position: relative;
+    display: block;
+  }
+
+  .filters__icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 0.95rem;
+  }
+
+  .filters__search input {
+    padding-left: 40px;
+    box-shadow: 3px 3px 0 var(--edge);
+  }
+
+  /* ปุ่มเครื่องเล่นเรียงแถวเดียวแล้วปัดซ้ายขวาได้บนมือถือ ไม่ดันหน้าให้ยาวลงไปหลายบรรทัด
+     จอกว้างพอก็ขึ้นบรรทัดใหม่ตามปกติ */
+  .chips {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding: 2px 4px 6px 2px;
+    scrollbar-width: thin;
+  }
+
+  @media (min-width: 700px) {
+    .chips {
+      flex-wrap: wrap;
+      overflow: visible;
+    }
+  }
+
+  .chip {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 40px;
+    padding: 6px 12px;
+    border: 2px solid var(--edge);
+    background: var(--surface);
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.88rem;
+    white-space: nowrap;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--edge);
+  }
+
+  .chip[aria-pressed='true'] {
+    background: var(--blue);
+    color: #fff;
+  }
+
+  .chip:active {
+    transform: translate(2px, 2px);
+    box-shadow: 0 0 0 var(--edge);
+  }
+
+  .chip:focus-visible {
+    outline: 3px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  .chip__count {
+    font-size: 0.75rem;
+    padding: 0 6px;
+    border: 1px solid currentColor;
+    opacity: 0.85;
+  }
+
+  .filters__sort {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .filters__sort .field__label {
+    margin: 0;
+    flex: none;
+  }
+
+  .filters__sort select {
+    width: auto;
+    padding: 8px 12px;
+  }
+
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+</style>

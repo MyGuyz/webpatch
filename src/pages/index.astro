@@ -1,14 +1,35 @@
 ---
 import Base from '../layouts/Base.astro';
 import GameCard from '../components/GameCard.astro';
-import { getPublishedGames, getActiveAnnouncement, isUsingSeedData } from '../lib/games.js';
+import GameFilters from '../components/GameFilters.astro';
+import { getPublishedGames, getConsoles, getActiveAnnouncement, isUsingSeedData } from '../lib/games.js';
+import { readFilters, matchesGame, sortGames } from '../lib/game-filter.js';
 
 const games = await getPublishedGames();
+const consoles = await getConsoles();
 const announcement = await getActiveAnnouncement();
 const usingSeed = isUsingSeedData();
 
-const ready = games.filter((g) => g.status === 'ready' || g.status === 'beta');
-const inProgress = games.filter((g) => g.status === 'wip');
+// หน้าแรกเป็นคลังเกม — ตัวกรองอ่านจากลิงก์ (/?console=ps2&q=...) ให้ลิงก์ที่แชร์มาขึ้นผล
+// ที่กรองแล้วตั้งแต่แรก การ์ดทุกใบยังอยู่ในหน้า (ใบที่ไม่ตรงแค่ซ่อนไว้) สคริปต์จะได้กรองต่อ
+// ในเครื่องผู้ใช้ทันทีโดยไม่ต้องโหลดหน้าใหม่ (ดู scripts/game-library.js)
+const filters = readFilters(Astro.url.searchParams);
+const sorted = sortGames(games, filters.sort);
+const ready = sorted.filter((g) => g.status === 'ready' || g.status === 'beta');
+const inProgress = sorted.filter((g) => g.status === 'wip');
+const readyShown = ready.filter((g) => matchesGame(g, filters)).length;
+const wipShown = inProgress.filter((g) => matchesGame(g, filters)).length;
+
+// ข้อมูลเท่าที่ตัวกรองต้องใช้ ไม่ส่งทั้งก้อน
+const libraryData = games.map((g) => ({
+  id: g.id,
+  title: g.title,
+  subtitle: g.subtitle,
+  status: g.status,
+  patch_updated_at: g.patch_updated_at,
+  download_count: g.download_count,
+  console: g.console ? { name: g.console.name, slug: g.console.slug } : null,
+}));
 ---
 
 <Base title="แมแปว — แพตช์แปลไทยสำหรับเกมย้อนยุค">
@@ -57,33 +78,53 @@ const inProgress = games.filter((g) => g.status === 'wip');
       )
     }
 
-    <section>
-      <h2 class="section-head">เกมที่พร้อมให้แปะ</h2>
+    <section id="library">
+      <h2 class="section-head">
+        เกมที่พร้อมให้แปะ
+        <span class="muted section-head__count" data-library-count>
+          {readyShown === ready.length ? `${ready.length} เกม` : `พบ ${readyShown} จาก ${ready.length} เกม`}
+        </span>
+      </h2>
+      {
+        games.length > 0 && (
+          <GameFilters games={games} consoles={consoles} filters={filters} showSort />
+        )
+      }
       {
         ready.length === 0 ? (
           <p class="muted">ยังไม่มีเกมที่พร้อมให้แปะ รอติดตามนะครับ</p>
         ) : (
-          <div class="games-grid">
+          <div class="games-grid" data-library-grid="ready">
             {ready.map((game) => (
-              <GameCard game={game} href={`/patch?game=${game.id}`} />
+              <div class="games-grid__cell" data-game-id={game.id} hidden={!matchesGame(game, filters)}>
+                <GameCard game={game} href={`/patch?game=${game.id}`} />
+              </div>
             ))}
           </div>
         )
       }
+      <div class="library-empty" data-library-empty hidden={ready.length === 0 || readyShown > 0}>
+        <p>ไม่พบเกมที่ตรงกับที่ค้นหา ลองพิมพ์ชื่ออื่น หรือเลือก “ทั้งหมด”</p>
+        <button type="button" class="btn btn--small" data-filter-clear>ล้างตัวกรอง</button>
+      </div>
     </section>
 
     {
       inProgress.length > 0 && (
-        <section>
+        <section data-library-section="wip" hidden={wipShown === 0}>
           <h2 class="section-head">กำลังแปลอยู่</h2>
-          <div class="games-grid">
+          <div class="games-grid" data-library-grid="wip">
             {inProgress.map((game) => (
-              <GameCard game={game} />
+              <div class="games-grid__cell" data-game-id={game.id} hidden={!matchesGame(game, filters)}>
+                <GameCard game={game} />
+              </div>
             ))}
           </div>
         </section>
       )
     }
+
+    <script type="application/json" id="library-data" set:html={JSON.stringify(libraryData)} />
 
     <section class="cart">
       <div class="cart__label" style="background: var(--blue); color: #fff8e8;">
@@ -111,6 +152,8 @@ const inProgress = games.filter((g) => g.status === 'wip');
       และไฟล์นั้นจะไม่ถูกส่งออกจากเครื่องไปไหนทั้งนั้น
     </p>
   </div>
+
+  <script src="../scripts/game-library.js"></script>
 </Base>
 
 <style>
@@ -358,6 +401,31 @@ const inProgress = games.filter((g) => g.status === 'wip');
     background: var(--clay);
     border: 2px solid var(--edge);
     flex: none;
+  }
+
+  .section-head__count {
+    font-size: 0.82rem;
+    font-weight: 400;
+  }
+
+  /* กล่องหุ้มการ์ดแต่ละใบไว้ซ่อน/สลับลำดับตอนกรอง — ต้องยืดเต็มช่องกริด การ์ดจะได้สูงเท่ากัน */
+  .games-grid__cell {
+    display: grid;
+  }
+
+  .library-empty {
+    padding: 18px;
+    border: 2px dashed var(--edge);
+    background: var(--surface);
+    text-align: center;
+  }
+
+  .library-empty p {
+    margin: 0 0 12px;
+  }
+
+  .library-empty .btn {
+    margin: 0 auto;
   }
 
   .announce {

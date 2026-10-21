@@ -70,6 +70,34 @@ await check('แสดงเกมที่พร้อมให้แปะ', a
   assert.ok(await page.getByText('Bahamut Lagoon').first().isVisible());
 });
 
+await check('คลังเกม: ค้นหา กดเครื่องเล่น และจำตัวกรองไว้ในลิงก์', async () => {
+  const visibleTitles = () => page.locator('[data-library-grid="ready"] > :not([hidden]) .game__title').allTextContents();
+
+  await page.fill('[data-filter-q]', 'golden');
+  assert.deepEqual(await visibleTitles(), ['Golden Sun: The Lost Age']);
+  assert.match(page.url(), /q=golden/);
+
+  await page.fill('[data-filter-q]', '');
+  await page.locator('.chip', { hasText: 'Super Famicom' }).click();
+  assert.deepEqual(await visibleTitles(), ['Bahamut Lagoon']);
+  assert.match(page.url(), /console=snes/);
+
+  await page.fill('[data-filter-q]', 'ไม่มีเกมนี้แน่นอน');
+  assert.ok(await page.locator('[data-library-empty]').isVisible(), 'ต้องบอกว่าไม่พบเกม');
+  await page.click('[data-filter-clear]');
+  assert.equal((await visibleTitles()).length, 2);
+});
+
+await check('คลังเกม: เปิดลิงก์ที่มีตัวกรองแล้วขึ้นผลที่กรองทันที + เรียงตามชื่อ', async () => {
+  await page.goto(`${BASE}/?console=gba`, { waitUntil: 'domcontentloaded' });
+  const titles = await page.locator('[data-library-grid="ready"] > :not([hidden]) .game__title').allTextContents();
+  assert.deepEqual(titles, ['Golden Sun: The Lost Age']);
+
+  await page.goto(`${BASE}/?sort=title`, { waitUntil: 'domcontentloaded' });
+  const sorted = await page.locator('[data-library-grid="ready"] > :not([hidden]) .game__title').allTextContents();
+  assert.deepEqual(sorted, ['Bahamut Lagoon', 'Golden Sun: The Lost Age']);
+});
+
 await check('บอกผู้ใช้ว่าไฟล์เกมไม่ถูกอัปโหลด', async () => {
   assert.ok(await page.getByText(/ไม่ถูกส่งออกจากเครื่อง/).first().isVisible());
 });
@@ -90,21 +118,32 @@ await check('ตอนแรกยังไม่โชว์ขั้นตอ�
 });
 
 await check('เลือกเกมแล้วขั้นตอนถัดไปโผล่ขึ้นมา', async () => {
-  await page.selectOption('#game-select', { label: 'Bahamut Lagoon (Super Famicom)' });
+  await page.locator('#game-list .pick', { hasText: 'Bahamut Lagoon' }).click();
   await page.waitForSelector('#step-file:not([hidden])');
   assert.match(await page.locator('#info-title').textContent(), /Bahamut Lagoon/);
+  assert.ok(await page.locator('#game-change').isVisible(), 'ต้องมีปุ่มเปลี่ยนเกม');
+  assert.equal(await page.locator('#game-list .pick:visible').count(), 1, 'รายการต้องยุบเหลือเกมที่เลือก');
 });
 
-await check('กรองเกมตามเครื่องเล่นที่เลือก', async () => {
-  await page.selectOption('#console-select', { label: 'Game Boy Advance' });
-  const options = await page.locator('#game-select option').allTextContents();
-  assert.ok(options.some((o) => o.includes('Golden Sun')), 'ควรมี Golden Sun');
-  assert.ok(!options.some((o) => o.includes('Bahamut')), 'ไม่ควรมีเกมของเครื่องอื่น');
+await check('กรองเกมตามเครื่องเล่นและช่องค้นหา', async () => {
+  await page.click('#game-change');
+  await page.locator('#game-picker .chip', { hasText: 'Game Boy Advance' }).click();
+  const titles = await page.locator('#game-list .pick:visible .pick__title').allTextContents();
+  assert.ok(titles.some((t) => t.includes('Golden Sun')), 'ควรมี Golden Sun');
+  assert.ok(!titles.some((t) => t.includes('Bahamut')), 'ไม่ควรมีเกมของเครื่องอื่น');
+
+  await page.locator('#game-picker .chip', { hasText: 'ทั้งหมด' }).click();
+  await page.fill('#game-picker input[type=search]', 'bahamut');
+  const found = await page.locator('#game-list .pick:visible .pick__title').allTextContents();
+  assert.deepEqual(found, ['Bahamut Lagoon']);
+
+  await page.fill('#game-picker input[type=search]', 'ไม่มีเกมนี้แน่นอน');
+  assert.ok(await page.locator('#game-list-empty').isVisible(), 'ต้องบอกว่าไม่พบเกม');
+  await page.fill('#game-picker input[type=search]', '');
 });
 
 await check('ปฏิเสธไฟล์ผิดรุ่น ขึ้นป๊อปอัปแจ้งเตือน และไม่มีปุ่มแปะให้กด', async () => {
-  await page.selectOption('#console-select', '');
-  await page.selectOption('#game-select', { label: 'Bahamut Lagoon (Super Famicom)' });
+  await page.locator('#game-list .pick', { hasText: 'Bahamut Lagoon' }).click();
   await page.setInputFiles('#source-file', {
     name: 'wrong.sfc',
     mimeType: 'application/octet-stream',

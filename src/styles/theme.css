@@ -179,6 +179,7 @@ a {
 .tag--ready { background: var(--teal); color: #f3fff0; }
 .tag--beta { background: var(--amber); color: var(--ink); }
 .tag--wip { background: var(--clay); color: #fff8e8; }
+.tag--new { background: var(--blue); color: #fff; }
 .tag--console {
   background: var(--surface);
   color: var(--ink);
@@ -259,7 +260,7 @@ a {
   color: var(--ink-soft);
 }
 
-select, input[type='text'], textarea {
+select, input[type='text'], input[type='search'], textarea {
   width: 100%;
   padding: 12px 14px;
   background: var(--surface);

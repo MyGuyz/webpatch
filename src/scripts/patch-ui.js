@@ -5,6 +5,7 @@ import { BigBuffer } from '../patcher/big-buffer.js';
 import { pickRandomShopeeLink } from '../lib/shopee-links.js';
 import { supportsStreamingSave, createSaveStream } from '../lib/save-file-stream.js';
 import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError, sfxCancel } from '../lib/sfx.js';
+import { matchesGame } from '../lib/game-filter.js';
 
 const el = (id) => document.getElementById(id);
 
@@ -45,8 +46,8 @@ let resultUrl = null;
 document.addEventListener('astro:page-load', init);
 
 function init() {
-  const consoleSelect = el('console-select');
-  if (!consoleSelect) return; // หน้านี้ยังไม่มีเกมพร้อมให้แปะ เลยไม่มีฟอร์มให้ผูก
+  const picker = el('game-picker');
+  if (!picker) return; // หน้านี้ยังไม่มีเกมพร้อมให้แปะ เลยไม่มีฟอร์มให้ผูก
 
   // อ่านจาก JSON data island แทน window global ตัวแปรธรรมดา — เพราะเว็บนี้เปลี่ยนหน้า
   // แบบ SPA และ window.__GAMES__ ถูกใช้ชื่อซ้ำกันหลายหน้าโดยรูปร่างข้อมูลไม่เหมือนกัน
@@ -58,7 +59,12 @@ function init() {
   const games = data.games ?? [];
   const preselectId = data.preselectId;
 
-  const gameSelect = el('game-select');
+  const qInput = picker.querySelector('[data-filter-q]');
+  const chips = [...picker.querySelectorAll('[data-filter-console]')];
+  const pickItems = [...picker.querySelectorAll('#game-list > [data-game-id]')];
+  const pickEmpty = el('game-list-empty');
+  const changeBtn = el('game-change');
+  const pickFilters = picker.querySelector('[data-filters]');
   const gameInfo = el('game-info');
   const infoCoverImg = el('info-cover-img');
   const infoCoverArt = gameInfo.querySelector('.info__cover-art');
@@ -112,19 +118,33 @@ function init() {
 
   // ── เลือกเกม ──────────────────────────────────────────────
 
-  function fillGameOptions() {
-    const consoleId = consoleSelect.value;
-    const list = consoleId
-      ? games.filter((g) => String(g.console?.id) === consoleId)
-      : games;
+  // รายชื่อเกมแบบมีปก + ช่องค้นหา + ปุ่มเครื่อง (แทน dropdown 2 ตัวเดิม)
+  // เลือกเกมแล้วรายการยุบเหลือเกมที่เลือกใบเดียว + ปุ่ม "เปลี่ยนเกม" ขั้นตอนถัดไปจะได้ขึ้นมาใกล้ๆ
+  const filterState = { q: '', console: '' };
+  let pickerOpen = true;
 
-    gameSelect.innerHTML = '<option value="">— เลือกเกม —</option>';
-    for (const game of list) {
-      const option = document.createElement('option');
-      option.value = String(game.id);
-      option.textContent = game.console ? `${game.title} (${game.console.name})` : game.title;
-      gameSelect.appendChild(option);
+  function renderPicker() {
+    for (const chip of chips) {
+      chip.setAttribute('aria-pressed', String(chip.dataset.filterConsole === filterState.console));
     }
+    let shown = 0;
+    for (const item of pickItems) {
+      const isSelected = String(selectedGame?.id) === item.dataset.gameId;
+      item.querySelector('[data-pick]').setAttribute('aria-pressed', String(isSelected));
+      const game = games.find((g) => String(g.id) === item.dataset.gameId);
+      const show = pickerOpen ? Boolean(game) && matchesGame(game, filterState) : isSelected;
+      item.hidden = !show;
+      if (show) shown += 1;
+    }
+    if (pickFilters) pickFilters.hidden = !pickerOpen;
+    pickEmpty.hidden = !pickerOpen || shown > 0;
+    changeBtn.hidden = pickerOpen || !selectedGame;
+  }
+
+  function pickGame(game) {
+    showGame(game);
+    pickerOpen = !game;
+    renderPicker();
   }
 
   function showGame(game) {
@@ -574,13 +594,35 @@ function init() {
 
   // ── เริ่มทำงาน ────────────────────────────────────────────
 
-  consoleSelect.addEventListener('change', () => {
-    fillGameOptions();
-    showGame(null);
+  qInput?.addEventListener('input', () => {
+    filterState.q = qInput.value;
+    renderPicker();
   });
 
-  gameSelect.addEventListener('change', () => {
-    showGame(games.find((g) => String(g.id) === gameSelect.value) ?? null);
+  for (const chip of chips) {
+    chip.addEventListener('click', () => {
+      filterState.console = chip.dataset.filterConsole ?? '';
+      renderPicker();
+    });
+  }
+
+  for (const item of pickItems) {
+    item.querySelector('[data-pick]').addEventListener('click', () => {
+      if (!pickerOpen) {
+        // ตอนยุบอยู่ กดเกมที่เลือกไว้ = อยากเปลี่ยนเกม
+        pickerOpen = true;
+        renderPicker();
+        return;
+      }
+      pickGame(games.find((g) => String(g.id) === item.dataset.gameId) ?? null);
+    });
+  }
+
+  changeBtn.addEventListener('click', () => {
+    sfxTick();
+    pickerOpen = true;
+    renderPicker();
+    qInput?.focus();
   });
 
   fileInput.addEventListener('change', handleFileChosen);
@@ -633,17 +675,11 @@ function init() {
     closePatchDoneModal();
   });
 
-  fillGameOptions();
-
-  if (preselectId) {
-    const game = games.find((g) => String(g.id) === String(preselectId));
-    if (game) {
-      if (game.console) consoleSelect.value = String(game.console.id);
-      fillGameOptions();
-      gameSelect.value = String(game.id);
-      showGame(game);
-    }
-  }
+  const preselected = preselectId
+    ? games.find((g) => String(g.id) === String(preselectId))
+    : null;
+  if (preselected) pickGame(preselected);
+  else renderPicker();
 }
 
 // ── ตัวช่วย (ไม่ผูกกับ DOM ต่อหน้า ไม่ต้องอยู่ใน init) ──────────

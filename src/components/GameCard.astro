@@ -1,6 +1,7 @@
 ---
 import PixelIcon from './PixelIcon.astro';
 import { STATUS_LABELS, PROGRESS_STAGES } from '../lib/games.js';
+import { isNew } from '../lib/game-filter.js';
 
 interface Props {
   game: any;
@@ -10,6 +11,7 @@ interface Props {
 const { game, href } = Astro.props;
 const status = STATUS_LABELS[game.status] ?? STATUS_LABELS.wip;
 const isWip = game.status === 'wip';
+const fresh = isNew(game);
 
 // รายละเอียดภาษาไทยแยกออกมาอีกบรรทัด เพราะบรรทัดเวอร์ชันด้านบนใช้ฟอนต์พิกเซลที่ไม่มีอักษรไทย
 const details = [
@@ -20,7 +22,10 @@ const details = [
 
 <article class="cart game">
   <div class="cart__label">
-    <span class={`tag ${status.className}`}>{status.text}</span>
+    <span class="game__tags">
+      <span class={`tag ${status.className}`}>{status.text}</span>
+      {fresh && <span class="tag tag--new" title="อัปเดตแพตช์ภายใน 30 วันที่ผ่านมา">NEW</span>}
+    </span>
     <span class="tag tag--console">{game.console?.name ?? '—'}</span>
   </div>
 
@@ -87,6 +92,11 @@ const details = [
        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)) ให้คอลัมน์เดียวกว้างเต็มแถว
        ถ้าไม่มี max-width กำกับไว้ ภาพปกสี่เหลี่ยมจัตุรัส (aspect-ratio: 1/1) จะโตตามจนดูแปลก */
     max-width: 420px;
+  }
+
+  .game__tags {
+    display: inline-flex;
+    gap: 6px;
   }
 
   .cart__body {

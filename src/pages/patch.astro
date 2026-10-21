@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import PixelIcon from '../components/PixelIcon.astro';
+import GameFilters from '../components/GameFilters.astro';
 import {
   getReadyGames,
   getConsoles,
@@ -15,11 +16,6 @@ const changelogsByGame = await getChangelogsByGame(games);
 const usingSeed = isUsingSeedData();
 
 const preselectedId = Astro.url.searchParams.get('game');
-
-// เหลือเฉพาะเครื่องที่มีเกมพร้อมแปะจริง จะได้ไม่มีตัวเลือกที่กดแล้วว่างเปล่า
-const consolesWithGames = consoles.filter((c) =>
-  games.some((g) => g.console?.id === c.id)
-);
 ---
 
 <Base title="แปะแพตช์ภาษาไทย — แมแปว" description="เลือกเกม เลือกไฟล์เกมของคุณ กดปุ่มเดียวได้เกมภาษาไทย">
@@ -52,22 +48,34 @@ const consolesWithGames = consoles.filter((c) =>
         <section class="cart">
           <div class="cart__label"><span>1 · เลือกเกม</span></div>
           <div class="cart__body">
-            <label class="field">
-              <span class="field__label">เครื่องเล่น</span>
-              <select id="console-select">
-                <option value="">— ทุกเครื่อง —</option>
-                {consolesWithGames.map((c) => (
-                  <option value={c.id}>{c.name}</option>
+            <div id="game-picker">
+              <GameFilters games={games} consoles={consoles} filters={{ q: '', console: '' }} />
+              <ul class="pick-list" id="game-list" aria-label="รายชื่อเกม">
+                {games.map((g) => (
+                  <li data-game-id={g.id}>
+                    <button type="button" class="pick" data-pick={g.id} aria-pressed="false">
+                      <span class="pick__cover">
+                        {g.cover_url ? (
+                          <img src={g.cover_url} alt="" loading="lazy" onerror="this.style.visibility='hidden'" />
+                        ) : (
+                          <PixelIcon name="patch" class="pick__cover-art" />
+                        )}
+                      </span>
+                      <span class="pick__text">
+                        <span class="pick__title">{g.title}</span>
+                        <span class="muted pick__meta">
+                          {[g.console?.name, g.patch_version].filter(Boolean).join(' · ')}
+                        </span>
+                      </span>
+                    </button>
+                  </li>
                 ))}
-              </select>
-            </label>
-
-            <label class="field">
-              <span class="field__label">เกม</span>
-              <select id="game-select">
-                <option value="">— เลือกเกม —</option>
-              </select>
-            </label>
+              </ul>
+              <p class="muted pick-empty" id="game-list-empty" hidden>ไม่พบเกมที่ตรงกับที่ค้นหา</p>
+            </div>
+            <button type="button" class="btn btn--small pick-change" id="game-change" hidden>
+              🔄 เปลี่ยนเกม
+            </button>
           </div>
         </section>
 
@@ -334,6 +342,95 @@ const consolesWithGames = consoles.filter((c) =>
       max-width: 640px;
       margin: 0 auto;
     }
+  }
+
+  /* รายชื่อเกมแบบมีปกเล็ก แทน dropdown เดิม — เห็นปกแล้วจำเกมได้เร็วกว่าอ่านชื่ออังกฤษยาวๆ
+     ตั้งความสูงสูงสุดไว้ ถ้าเกมเยอะรายการจะเลื่อนในกรอบ ไม่ดันขั้นตอนถัดไปตกจอ */
+  .pick-list {
+    list-style: none;
+    margin: 0;
+    padding: 2px 4px 4px 2px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    max-height: 420px;
+    overflow-y: auto;
+  }
+
+  .pick {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 8px;
+    border: 2px solid var(--edge);
+    background: var(--surface);
+    color: var(--ink);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+    box-shadow: 2px 2px 0 var(--edge);
+  }
+
+  .pick:hover {
+    background: var(--surface-sunken);
+  }
+
+  .pick[aria-pressed='true'] {
+    background: var(--amber-wash);
+    outline: 3px solid var(--blue);
+    outline-offset: -3px;
+  }
+
+  .pick:focus-visible {
+    outline: 3px solid var(--amber);
+    outline-offset: 2px;
+  }
+
+  .pick__cover {
+    flex: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 52px;
+    height: 52px;
+    border: 2px solid var(--edge);
+    background: var(--surface-sunken);
+    overflow: hidden;
+  }
+
+  .pick__cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .pick__cover :global(.pick__cover-art) {
+    width: 60%;
+    image-rendering: pixelated;
+  }
+
+  .pick__text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .pick__title {
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+
+  .pick__meta {
+    font-size: 0.8rem;
+  }
+
+  .pick-empty {
+    margin: 4px 0 0;
+  }
+
+  .pick-change {
+    margin-top: 12px;
   }
 
   .info__cover {
