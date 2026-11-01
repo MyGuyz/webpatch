@@ -452,7 +452,16 @@ function init() {
         // ไว้เฉยๆ) — บนมือถือ Android ขั้นนี้ช้าได้หลายวินาทีถึงเป็นนาทีสำหรับไฟล์ใหญ่มาก
         // ถ้าไม่โชว์อะไรเลยจะดูเหมือนค้างที่ 100% ทั้งที่กำลังทำงานอยู่จริง
         updateProgress('กำลังบันทึกไฟล์ลงเครื่อง... (ขั้นตอนนี้อาจใช้เวลาอีกสักครู่)', null);
-        await stream.writable.close();
+        try {
+          await stream.writable.close();
+        } catch (error) {
+          // Chrome เขียนผลลัพธ์ลงไฟล์ชั่วคราว "<ชื่อ>.crswap" แล้วค่อยเปลี่ยนชื่อทับไฟล์จริงตอน close()
+          // ไฟล์ใหญ่ระดับ 8GB เจอจริงว่าขั้นเปลี่ยนชื่อนี้พัง (InvalidStateError — น่าจะเพราะโปรแกรม
+          // สแกนไวรัสยังถือไฟล์อยู่) ทั้งที่เนื้อไฟล์ .crswap ถูกต้องครบแล้ว และ Chrome ไม่ลบทิ้งให้
+          // จึงบอกวิธีกู้ไฟล์แทนข้อความ error ภาษาอังกฤษที่ผู้ใช้อ่านไม่รู้เรื่อง
+          error.userMessage = swapRenameFailedMessage(stream.handle.name);
+          throw error;
+        }
 
         resultFilename = stream.handle.name;
         hideProgress();
@@ -490,7 +499,8 @@ function init() {
       if (stream) await stream.writable.close().catch(() => {});
       sfxError();
       runError.hidden = false;
-      runError.textContent = `${error.message} — ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ`;
+      runError.textContent =
+        error.userMessage ?? `${error.message} — ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ`;
       setApplyPhase('patch');
     } finally {
       await releaseWakeLock();
@@ -722,6 +732,16 @@ function isZipFile(bytes, name) {
  */
 function isMobileDevice() {
   return /Android|iPhone|iPod/i.test(navigator.userAgent);
+}
+
+function swapRenameFailedMessage(name) {
+  return (
+    `แปะแพตช์ครบแล้ว แต่เบราว์เซอร์บันทึกไฟล์ขั้นสุดท้ายไม่สำเร็จ — ไฟล์ที่แปะเสร็จยังอยู่ครบในโฟลเดอร์ที่เลือกไว้ ` +
+    `ชื่อ "${name}.crswap" (ถ้าลองหลายรอบจะเป็น .1.crswap, .2.crswap ใช้ไฟล์ล่าสุด) ` +
+    `ให้เปลี่ยนชื่อไฟล์นั้นเป็น "${name}" ก็เล่นได้เลย (ถ้ามีไฟล์ "${name}" ขนาด 0 ไบต์อยู่ ลบทิ้งก่อน · ` +
+    `ถ้ามองไม่เห็นนามสกุล .crswap ให้ติ๊ก "File name extensions" ในเมนู View ของ File Explorer) ` +
+    `มักเกิดกับไฟล์ใหญ่มากตอนโปรแกรมสแกนไวรัสกำลังตรวจไฟล์ จะลองกดแปะใหม่อีกรอบก็ได้`
+  );
 }
 
 function thaiFileName(name) {
