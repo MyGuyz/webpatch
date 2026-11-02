@@ -78,6 +78,12 @@ export async function createDownloadStream(filename, size) {
 
   return {
     name: filename,
+    // resolve เมื่อเบราว์เซอร์ยกเลิกการดาวน์โหลด (เช่นผู้ใช้กดยกเลิกกล่อง "บันทึกเป็น" ของ Chrome)
+    // ไม่ resolve เลยถ้าดาวน์โหลดจบปกติ
+    canceled: writer.closed.then(
+      () => new Promise(() => {}),
+      () => true
+    ),
     writable: {
       async write(chunk) {
         // ผู้ใช้กดยกเลิกในแถบดาวน์โหลด (หรือเบราว์เซอร์ยกเลิกเอง) → สตรีมถูก cancel แล้ว

@@ -107,8 +107,8 @@ function init() {
   const stage1TextDefault = patchDoneStage1Text.textContent;
   const stage1TextStreamed = 'ไฟล์นี้ถูกบันทึกไปยังตำแหน่งที่คุณเลือกไว้ตอนกดแปะแล้วโดยตรง';
   const stage1TextDownload =
-    'ไฟล์นี้อยู่ในโฟลเดอร์ "Downloads" ของเครื่องคุณ — ไฟล์ใหญ่มาก ถ้าแถบดาวน์โหลดของเบราว์เซอร์ยังหมุนอยู่ ' +
-    'รอให้ขึ้นว่าเสร็จก่อนค่อยเปิดเล่น';
+    'ไฟล์นี้อยู่ในโฟลเดอร์ที่คุณเลือกตอน Chrome ถาม (ถ้าไม่ได้ถาม จะอยู่ในโฟลเดอร์ "Downloads") — ไฟล์ใหญ่มาก ' +
+    'ถ้าแถบดาวน์โหลดของเบราว์เซอร์ยังหมุนอยู่ รอให้ขึ้นว่าเสร็จก่อนค่อยเปิดเล่น';
 
   if (resultUrl) {
     URL.revokeObjectURL(resultUrl);
@@ -266,6 +266,9 @@ function init() {
     } else if (phase === 'download') {
       applyBtn.textContent = '↓ ดาวน์โหลดไฟล์ภาษาไทย';
       applyBtn.disabled = false;
+    } else if (phase === 'confirm-save') {
+      applyBtn.textContent = '▶ เลือกที่เก็บไฟล์แล้ว เริ่มแปะ';
+      applyBtn.disabled = false;
     }
   }
 
@@ -408,8 +411,8 @@ function init() {
 
   function bigFileNoteText(fileSize) {
     if (useDownloadStreamFor(fileSize)) {
-      return 'ไฟล์นี้ใหญ่มาก — พอกดแปะ เบราว์เซอร์จะเริ่มดาวน์โหลดไฟล์เข้าโฟลเดอร์ "Downloads" ทันทีและแปะไประหว่างดาวน์โหลด ' +
-        'ไม่ต้องพึ่งแรมเยอะ อย่าเพิ่งปิดแท็บจนกว่าจะขึ้นว่าแปะเสร็จนะครับ';
+      return 'ไฟล์นี้ใหญ่มาก — พอกดแปะ เบราว์เซอร์จะเริ่มดาวน์โหลดไฟล์ (ถ้า Chrome ถามที่เก็บไฟล์ ให้เลือกก่อน) ' +
+        'แล้วกดปุ่มเริ่มแปะอีกครั้ง ระหว่างแปะไม่ต้องพึ่งแรมเยอะ อย่าเพิ่งปิดแท็บจนกว่าจะขึ้นว่าแปะเสร็จนะครับ';
     }
     if (useStreamingFor(fileSize)) {
       return 'ไฟล์นี้ใหญ่มาก — เบราว์เซอร์รุ่นนี้รองรับการเขียนไฟล์ลงดิสก์ตรงๆ ระหว่างแปะ ไม่ต้องพึ่งแรมเยอะเหมือนปกติ ' +
@@ -422,6 +425,31 @@ function init() {
   }
 
   // ── แปะแพตช์ ──────────────────────────────────────────────
+
+  /** ปุ่มแปะเปลี่ยนเป็น "เลือกที่เก็บไฟล์แล้ว เริ่มแปะ" แล้วรอผู้ใช้กด — คืน false ถ้าเบราว์เซอร์
+     ยกเลิกการดาวน์โหลดไปก่อน (ผู้ใช้กดยกเลิกกล่อง "บันทึกเป็น") */
+  let confirmSaveLocation = null;
+  async function waitForSaveLocation(stream) {
+    const noteHidden = bigFileNote.hidden;
+    const noteText = bigFileNote.textContent;
+    bigFileNote.hidden = false;
+    bigFileNote.textContent =
+      'ถ้า Chrome เด้งหน้าต่างให้เลือกที่เก็บไฟล์ ให้เลือกที่เก็บให้เรียบร้อยก่อน แล้วค่อยกดปุ่มด้านล่างเพื่อเริ่มแปะ ' +
+      '(ถ้าไม่มีหน้าต่างเด้งขึ้นมา กดปุ่มได้เลย ไฟล์จะไปอยู่ในโฟลเดอร์ "Downloads")';
+    setApplyPhase('confirm-save');
+
+    const confirmed = await Promise.race([
+      new Promise((resolve) => {
+        confirmSaveLocation = () => resolve(true);
+      }),
+      stream.canceled.then(() => false),
+    ]);
+
+    confirmSaveLocation = null;
+    bigFileNote.hidden = noteHidden;
+    bigFileNote.textContent = noteText;
+    return confirmed;
+  }
 
   async function runPatch() {
     if (!selectedGame || !sourceFile) return;
@@ -452,6 +480,22 @@ function init() {
         runError.textContent = `เปิดกล่องเลือกที่เก็บไฟล์ไม่สำเร็จ: ${error.message}`;
         return;
       }
+    }
+
+    // ทางดาวน์โหลด: Chrome ที่ตั้ง "ถามที่บันทึกไฟล์ทุกครั้ง" จะเด้งกล่อง "บันทึกเป็น" ตอนนี้
+    // ห้ามส่งข้อมูลเข้าไปก่อนผู้ใช้เลือกที่เก็บเสร็จ — เจอจริงว่าไฟล์ 8GB ที่ไหลเข้าไปก่อนเลือก
+    // แล้วค่อยย้ายที่เก็บกลางทางออกมาเสีย จึงรอให้ผู้ใช้กดยืนยันก่อนค่อยเริ่มแปะ
+    if (streamKind === 'download') {
+      const confirmed = await waitForSaveLocation(stream);
+      if (!confirmed) {
+        await stream.writable.abort().catch(() => {});
+        sfxError();
+        runError.hidden = false;
+        runError.textContent = 'ยกเลิกการบันทึกไฟล์แล้ว — กดแปะใหม่ได้เลยเมื่อพร้อม';
+        setApplyPhase('patch');
+        return;
+      }
+      sfxConfirm();
     }
 
     setApplyPhase('running');
@@ -724,6 +768,8 @@ function init() {
   applyBtn.addEventListener('click', () => {
     if (applyBtn.dataset.phase === 'download') {
       downloadAndShowGuide();
+    } else if (applyBtn.dataset.phase === 'confirm-save') {
+      confirmSaveLocation?.();
     } else {
       runPatch();
     }

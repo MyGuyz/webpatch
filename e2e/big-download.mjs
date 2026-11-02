@@ -66,6 +66,10 @@ await page.click('#apply-btn');
 const download = await downloadEvent;
 log('download started:', download.suggestedFilename());
 
+// ปุ่มเปลี่ยนเป็น "เลือกที่เก็บไฟล์แล้ว เริ่มแปะ" — ข้อมูลยังไม่ไหลจนกว่าจะกดยืนยัน
+await page.locator('#apply-btn[data-phase="confirm-save"]').waitFor();
+await page.click('#apply-btn');
+
 const done = page.locator('#patch-done-modal.open').waitFor({ state: 'attached', timeout: 1800000 }).then(() => 'done modal');
 const failed = page
   .locator('#patch-run-error:not([hidden])')
