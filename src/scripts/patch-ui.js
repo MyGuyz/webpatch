@@ -4,6 +4,7 @@ import { sha1HexOfBlob } from '../patcher/sha1.js';
 import { BigBuffer } from '../patcher/big-buffer.js';
 import { pickRandomShopeeLink } from '../lib/shopee-links.js';
 import { supportsStreamingSave, createSaveStream } from '../lib/save-file-stream.js';
+import { supportsFolderSave, pickSaveFolder, createFolderSaveStream, finishFolderSave } from '../lib/save-folder-stream.js';
 import { supportsOpfsPatch, opfsHasRoomFor, clearOpfsOutput, patchIntoOpfs } from '../patcher/opfs-patch.js';
 import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError, sfxCancel } from '../lib/sfx.js';
 import { matchesGame } from '../lib/game-filter.js';
@@ -393,20 +394,40 @@ function init() {
   }
 
   /**
-   * คอมพิวเตอร์ + ไฟล์ใหญ่มาก → แปะลง OPFS ให้เสร็จก่อน แล้วค่อยกดดาวน์โหลดแบบปกติ (ADR-019)
-   * แทน showSaveFilePicker() ที่เจอจริงว่าบันทึกขั้นสุดท้ายพังกับไฟล์ 8GB บน Chrome Windows
-   * มือถือยังใช้ทาง showSaveFilePicker() ตาม ADR-017 เหมือนเดิม (ใช้งานได้จริงอยู่แล้ว)
+   * คอมพิวเตอร์ (Chrome/Edge) + ไฟล์ใหญ่มาก → เลือกโฟลเดอร์ที่จะเก็บก่อน แล้วแปะเขียนลงไฟล์ใน
+   * โฟลเดอร์นั้นตรงๆ (ADR-020) — ทั้งกล่อง Save As แบบไฟล์เดียวและการดาวน์โหลดปกติ ทดสอบแล้วว่า
+   * Chrome บันทึกขั้นสุดท้ายพังกับไฟล์หลาย GB มีแต่ทางนี้ที่หน้าเว็บแก้ชื่อไฟล์ซ้ำเองได้
+   */
+  function useFolderSaveFor(fileSize) {
+    return (
+      selectedGame?.patch_format === 'ppf' &&
+      !isMobileDevice() &&
+      fileSize > VERY_BIG_FILE_BYTES &&
+      supportsFolderSave()
+    );
+  }
+
+  /**
+   * คอมพิวเตอร์ที่ไม่มี showDirectoryPicker (เช่น Firefox/Safari) + ไฟล์ใหญ่มาก → แปะลง OPFS ให้
+   * เสร็จก่อน แล้วค่อยกดดาวน์โหลดแบบปกติ (ADR-019)
+   * มือถือยังใช้ทาง showSaveFilePicker() ตาม ADR-017 เหมือนเดิม
    */
   function useOpfsFor(fileSize) {
     return (
       selectedGame?.patch_format === 'ppf' &&
       !isMobileDevice() &&
       fileSize > VERY_BIG_FILE_BYTES &&
+      !supportsFolderSave() &&
       supportsOpfsPatch()
     );
   }
 
   function bigFileNoteText(fileSize) {
+    if (useFolderSaveFor(fileSize)) {
+      return 'ไฟล์นี้ใหญ่มาก — กดแปะแล้วจะมีกล่องให้เลือกโฟลเดอร์ที่จะเก็บไฟล์ก่อน (เลือกโฟลเดอร์ย่อย เช่น G:\\Games ' +
+        'Chrome ไม่ให้เลือกรากไดรฟ์หรือ Downloads/Desktop ตรงๆ) แล้วกด "อนุญาต" ให้เว็บบันทึกไฟล์ลงโฟลเดอร์นั้น ' +
+        'ขั้นสุดท้าย Chrome จะตรวจไฟล์อีกรอบ อาจใช้เวลาหลายนาที อย่าเพิ่งปิดแท็บจนขึ้นว่าแปะเสร็จนะครับ';
+    }
     if (useOpfsFor(fileSize)) {
       return 'ไฟล์นี้ใหญ่มาก — ระหว่างแปะไม่ต้องพึ่งแรมเยอะ แต่ต้องมีที่ว่างในไดรฟ์ C: อย่างน้อยเท่าขนาดไฟล์เกม ' +
         'แปะเสร็จแล้วกดปุ่มดาวน์โหลดเพื่อเลือกที่เก็บไฟล์ อย่าเพิ่งปิดแท็บจนกว่าจะดาวน์โหลดเสร็จนะครับ';
@@ -440,8 +461,22 @@ function init() {
     // ทางกล่อง Save As: เปิดกล่องก่อนเริ่มทำอะไรทั้งนั้น (ต้องเรียกตอนยังอยู่ในจังหวะ user gesture
     // จากการคลิกปุ่มโดยตรง เรียกทีหลังหลัง await เครือข่ายไปแล้วบางเบราว์เซอร์จะปฏิเสธ) — ผู้ใช้
     // กดยกเลิกได้ ไม่ใช่ error จริง แค่กลับไปหน้าเดิมเงียบๆ
+    let folderStream = null;
+    if (useFolderSaveFor(sourceFile.size)) {
+      try {
+        const dir = await pickSaveFolder();
+        folderStream = await createFolderSaveStream(dir, thaiFileName(sourceName));
+      } catch (error) {
+        if (error?.name === 'AbortError') return;
+        sfxError();
+        runError.hidden = false;
+        runError.textContent = `เลือกโฟลเดอร์ที่เก็บไฟล์ไม่สำเร็จ: ${error.message}`;
+        return;
+      }
+    }
+
     let stream = null;
-    if (!useOpfs && useStreamingFor(sourceFile.size)) {
+    if (!folderStream && !useOpfs && useStreamingFor(sourceFile.size)) {
       try {
         stream = await createSaveStream(thaiFileName(sourceName));
       } catch (error) {
@@ -468,6 +503,37 @@ function init() {
       const patchBytes = await readResponseWithProgress(response, (loaded, total) => {
         updateProgress('กำลังโหลดไฟล์แพตช์...', total ? loaded / total : null);
       });
+
+      if (folderStream) {
+        // อ่านไฟล์ต้นฉบับทีละก้อนแล้วเขียนผลลัพธ์ลงไฟล์ในโฟลเดอร์ที่เลือกไว้ทันที — ดู ADR-020
+        await streamApplyPPF(sourceFile, patchBytes, folderStream.writable, (written, total) => {
+          updateProgress('กำลังแปะและบันทึกไฟล์...', total ? written / total : null);
+        });
+        updateProgress('Chrome กำลังตรวจไฟล์ก่อนบันทึกขั้นสุดท้าย... (ไฟล์ใหญ่อาจใช้เวลาหลายนาที)', null);
+        try {
+          resultFilename = await finishFolderSave(folderStream, sourceFile.size, (kind, attempt) => {
+            updateProgress(
+              kind === 'rename'
+                ? `กำลังเปลี่ยนชื่อไฟล์เป็น ${folderStream.finalName} (Chrome ตรวจไฟล์อีกรอบ อาจใช้เวลาหลายนาที)...`
+                : `Chrome ตั้งชื่อไฟล์ไม่สำเร็จ กำลังลองใหม่ให้อัตโนมัติ (ครั้งที่ ${attempt})...`,
+              null,
+            );
+          });
+        } catch (error) {
+          error.userMessage = swapRenameFailedMessage(folderStream.writeName);
+          throw error;
+        }
+
+        hideProgress();
+        sfxSuccess();
+        setApplyPhase('patch');
+        showPatchDoneGuide({ streamed: true });
+        if (resultFilename !== folderStream.finalName) {
+          patchDoneStage1Text.textContent +=
+            ' (Chrome ไม่ยอมตั้งชื่อนามสกุล .iso ให้ — ไฟล์ .bin นี้เนื้อไฟล์เหมือนกันทุกไบต์ PCSX2 นับ .bin กับ .iso เป็นไฟล์ชนิดเดียวกัน เปิดเล่นได้เลย หรือจะเปลี่ยนชื่อเป็น .iso เองก็ได้)';
+        }
+        return;
+      }
 
       if (useOpfs) {
         // แปะลงไฟล์ใน OPFS ทีละก้อน (ไม่ต้องรวมทั้งไฟล์ไว้ในแรม) ให้เสร็จทั้งไฟล์ก่อน แล้วค่อยให้
@@ -554,6 +620,11 @@ function init() {
       hideProgress();
       // abort ไม่ใช่ close — ทิ้งไฟล์ครึ่งๆ กลางๆ แทนที่จะบันทึกไฟล์ที่ไม่ครบไว้ให้ผู้ใช้เข้าใจผิด
       if (stream) await stream.writable.abort(error).catch(() => {});
+      // ปิดไปแล้วกรณีบันทึกขั้นสุดท้ายพัง abort จะ error เฉยๆ ไม่ลบไฟล์ .crswap ที่ครบแล้ว
+      if (folderStream) {
+        await folderStream.writable.abort(error).catch(() => {});
+        await removeIfEmpty(folderStream.dir, folderStream.writeName);
+      }
       if (useOpfs) await clearOpfsOutput();
       if (error?.name === 'QuotaExceededError') {
         error.userMessage =
@@ -809,6 +880,16 @@ function swapRenameFailedMessage(name) {
     `ถ้ามองไม่เห็นนามสกุล .crswap ให้ติ๊ก "File name extensions" ในเมนู View ของ File Explorer) ` +
     `มักเกิดกับไฟล์ใหญ่มากตอนโปรแกรมสแกนไวรัสกำลังตรวจไฟล์ จะลองกดแปะใหม่อีกรอบก็ได้`
   );
+}
+
+/** ลบไฟล์ขนาด 0 ที่ Chrome สร้างจองชื่อไว้ตอนแปะไม่สำเร็จ ไม่ให้ค้างหลอกตาในโฟลเดอร์ผู้ใช้ */
+async function removeIfEmpty(dir, name) {
+  try {
+    const file = await (await dir.getFileHandle(name)).getFile();
+    if (file.size === 0) await dir.removeEntry(name);
+  } catch {
+    // ไม่มีไฟล์แล้ว หรือลบไม่ได้ — ไม่เป็นไร
+  }
 }
 
 function thaiFileName(name) {
