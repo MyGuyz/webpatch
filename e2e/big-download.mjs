@@ -4,6 +4,7 @@
  *
  * วิธีรัน (เปิด dev server ที่มี .env.local ชี้ Supabase จริงไว้ก่อน — ต้องมีเกม gameId ในฐานข้อมูล):
  *   node e2e/big-download.mjs "<ISO ต้นฉบับ>" "<ไฟล์ .ppf>" <gameId>
+ *   (ทดสอบกับเว็บจริง: ตั้ง BASE_URL=https://maepaew.com ไม่ต้องเปิด dev server)
  * ผ่านเมื่อบรรทัดสุดท้ายพิมพ์ SHA-1 ของไฟล์ที่ดาวน์โหลดได้ ตรงกับผลลัพธ์ที่ถูกต้องของแพตช์นั้น
  */
 import { chromium } from 'playwright';
@@ -44,7 +45,7 @@ const status = setInterval(async () => {
   log('status', s);
 }, 30000);
 
-await page.goto(`http://localhost:4321/patch?game=${gameId}`);
+await page.goto(`${process.env.BASE_URL ?? 'http://localhost:4321'}/patch?game=${gameId}`);
 await page.waitForFunction(() => navigator.serviceWorker?.controller != null, null, { timeout: 30000 });
 log('sw controlled');
 
