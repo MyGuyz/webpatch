@@ -4,6 +4,7 @@ import { sha1HexOfBlob } from '../patcher/sha1.js';
 import { BigBuffer } from '../patcher/big-buffer.js';
 import { pickRandomShopeeLink } from '../lib/shopee-links.js';
 import { supportsStreamingSave, createSaveStream } from '../lib/save-file-stream.js';
+import { supportsDownloadStream, createDownloadStream } from '../lib/download-stream.js';
 import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError, sfxCancel } from '../lib/sfx.js';
 import { matchesGame } from '../lib/game-filter.js';
 
@@ -105,6 +106,9 @@ function init() {
   const patchDoneStage1Text = el('patch-done-stage1-text');
   const stage1TextDefault = patchDoneStage1Text.textContent;
   const stage1TextStreamed = 'ไฟล์นี้ถูกบันทึกไปยังตำแหน่งที่คุณเลือกไว้ตอนกดแปะแล้วโดยตรง';
+  const stage1TextDownload =
+    'ไฟล์นี้อยู่ในโฟลเดอร์ "Downloads" ของเครื่องคุณ — ไฟล์ใหญ่มาก ถ้าแถบดาวน์โหลดของเบราว์เซอร์ยังหมุนอยู่ ' +
+    'รอให้ขึ้นว่าเสร็จก่อนค่อยเปิดเล่น';
 
   if (resultUrl) {
     URL.revokeObjectURL(resultUrl);
@@ -388,7 +392,25 @@ function init() {
     return fileSize > VERY_BIG_FILE_BYTES;
   }
 
+  /**
+   * คอมพิวเตอร์ + ไฟล์ใหญ่มาก → ดาวน์โหลดแบบสตรีมผ่าน service worker (ADR-019) แทน
+   * showSaveFilePicker() ที่เจอจริงว่าบันทึกขั้นสุดท้ายพังกับไฟล์ 8GB บน Chrome Windows
+   * มือถือยังใช้ทาง showSaveFilePicker() ตาม ADR-017 เหมือนเดิม (ใช้งานได้จริงอยู่แล้ว)
+   */
+  function useDownloadStreamFor(fileSize) {
+    return (
+      selectedGame?.patch_format === 'ppf' &&
+      !isMobileDevice() &&
+      fileSize > VERY_BIG_FILE_BYTES &&
+      supportsDownloadStream()
+    );
+  }
+
   function bigFileNoteText(fileSize) {
+    if (useDownloadStreamFor(fileSize)) {
+      return 'ไฟล์นี้ใหญ่มาก — พอกดแปะ เบราว์เซอร์จะเริ่มดาวน์โหลดไฟล์เข้าโฟลเดอร์ "Downloads" ทันทีและแปะไประหว่างดาวน์โหลด ' +
+        'ไม่ต้องพึ่งแรมเยอะ อย่าเพิ่งปิดแท็บจนกว่าจะขึ้นว่าแปะเสร็จนะครับ';
+    }
     if (useStreamingFor(fileSize)) {
       return 'ไฟล์นี้ใหญ่มาก — เบราว์เซอร์รุ่นนี้รองรับการเขียนไฟล์ลงดิสก์ตรงๆ ระหว่างแปะ ไม่ต้องพึ่งแรมเยอะเหมือนปกติ ' +
         'พอกดแปะจะมีกล่องให้เลือกที่เก็บไฟล์ก่อนเริ่ม (คล้าย "Save As") เลือกแล้วรอจนเสร็จได้เลย';
@@ -404,18 +426,25 @@ function init() {
   async function runPatch() {
     if (!selectedGame || !sourceFile) return;
 
-    const useStreaming = useStreamingFor(sourceFile.size);
-
     sfxConfirm();
     runError.hidden = true;
 
-    // ขอที่เก็บไฟล์ก่อนเริ่มทำอะไรทั้งนั้น (ต้องเรียกตอนยังอยู่ในจังหวะ user gesture จากการ
-    // คลิกปุ่มโดยตรง เรียกทีหลังหลัง await เครือข่ายไปแล้วบางเบราว์เซอร์จะปฏิเสธ) — ผู้ใช้
-    // กดยกเลิกได้ ไม่ใช่ error จริง แค่กลับไปหน้าเดิมเงียบๆ
+    // เปิดปลายทางของไฟล์ก่อนเริ่มทำอะไรทั้งนั้น (ต้องเรียกตอนยังอยู่ในจังหวะ user gesture จาก
+    // การคลิกปุ่มโดยตรง เรียกทีหลังหลัง await เครือข่ายไปแล้วบางเบราว์เซอร์จะปฏิเสธ)
+    // stream = { name, writable } — streamKind บอกว่าเป็นทางไหน ('download' หรือ 'save')
     let stream = null;
-    if (useStreaming) {
+    let streamKind = null;
+    if (useDownloadStreamFor(sourceFile.size)) {
+      // service worker ไม่ตอบ (เช่นยังเป็นตัวเก่าจากก่อนอัปเดตเว็บ) → ถอยไปใช้ทางกล่อง Save As
+      stream = await createDownloadStream(thaiFileName(sourceName), sourceFile.size).catch(() => null);
+      if (stream) streamKind = 'download';
+    }
+    // ผู้ใช้กดยกเลิกกล่อง Save As ได้ ไม่ใช่ error จริง แค่กลับไปหน้าเดิมเงียบๆ
+    if (!stream && useStreamingFor(sourceFile.size)) {
       try {
-        stream = await createSaveStream(thaiFileName(sourceName));
+        const saved = await createSaveStream(thaiFileName(sourceName));
+        stream = { name: saved.handle.name, writable: saved.writable };
+        streamKind = 'save';
       } catch (error) {
         if (error?.name === 'AbortError') return;
         sfxError();
@@ -441,9 +470,9 @@ function init() {
         updateProgress('กำลังโหลดไฟล์แพตช์...', total ? loaded / total : null);
       });
 
-      if (useStreaming) {
-        // อ่านไฟล์ต้นฉบับทีละก้อนแล้วเขียนผลลัพธ์ลงไฟล์ที่เลือกไว้ทันที ไม่ต้องรวมทั้งไฟล์
-        // ไว้ในแรมเลยสักครั้งเดียว (ต่างจากทาง BigBuffer ด้านล่าง) — ดู ADR-017
+      if (stream) {
+        // อ่านไฟล์ต้นฉบับทีละก้อนแล้วเขียนผลลัพธ์ออกปลายทางทันที ไม่ต้องรวมทั้งไฟล์
+        // ไว้ในแรมเลยสักครั้งเดียว (ต่างจากทาง BigBuffer ด้านล่าง) — ดู ADR-017/ADR-019
         await streamApplyPPF(sourceFile, patchBytes, stream.writable, (written, total) => {
           updateProgress('กำลังแปะและบันทึกไฟล์...', total ? written / total : null);
         });
@@ -459,15 +488,15 @@ function init() {
           // ไฟล์ใหญ่ระดับ 8GB เจอจริงว่าขั้นเปลี่ยนชื่อนี้พัง (InvalidStateError — น่าจะเพราะโปรแกรม
           // สแกนไวรัสยังถือไฟล์อยู่) ทั้งที่เนื้อไฟล์ .crswap ถูกต้องครบแล้ว และ Chrome ไม่ลบทิ้งให้
           // จึงบอกวิธีกู้ไฟล์แทนข้อความ error ภาษาอังกฤษที่ผู้ใช้อ่านไม่รู้เรื่อง
-          error.userMessage = swapRenameFailedMessage(stream.handle.name);
+          if (streamKind === 'save') error.userMessage = swapRenameFailedMessage(stream.name);
           throw error;
         }
 
-        resultFilename = stream.handle.name;
+        resultFilename = stream.name;
         hideProgress();
         sfxSuccess();
         setApplyPhase('patch'); // บันทึกเสร็จแล้วในตัว ไม่ต้องกดดาวน์โหลดซ้ำ พร้อมแปะไฟล์ถัดไปได้เลย
-        showPatchDoneGuide({ streamed: true });
+        showPatchDoneGuide({ streamed: streamKind });
         return;
       }
 
@@ -496,11 +525,13 @@ function init() {
       setApplyPhase('download');
     } catch (error) {
       hideProgress();
-      if (stream) await stream.writable.close().catch(() => {});
+      // abort ไม่ใช่ close — ทิ้งไฟล์ครึ่งๆ กลางๆ แทนที่จะบันทึกไฟล์ที่ไม่ครบไว้ให้ผู้ใช้เข้าใจผิด
+      if (stream) await stream.writable.abort(error).catch(() => {});
       sfxError();
       runError.hidden = false;
       runError.textContent =
-        error.userMessage ?? `${error.message} — ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ`;
+        error?.userMessage ??
+        `${error?.message ?? 'แปะแพตช์ไม่สำเร็จ'} — ถ้าติดปัญหาซ้ำๆ ช่วยแจ้งบั๊กมาได้ที่หน้าแจ้งบั๊กนะ`;
       setApplyPhase('patch');
     } finally {
       await releaseWakeLock();
@@ -589,7 +620,8 @@ function init() {
   function showPatchDoneGuide({ streamed }) {
     showFileStatus('none');
 
-    patchDoneStage1Text.textContent = streamed ? stage1TextStreamed : stage1TextDefault;
+    patchDoneStage1Text.textContent =
+      streamed === 'save' ? stage1TextStreamed : streamed === 'download' ? stage1TextDownload : stage1TextDefault;
     patchDoneTitle.textContent = selectedGame.title;
     patchDoneFilename.textContent = resultFilename;
     if (selectedGame.cover_url) {
