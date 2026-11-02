@@ -4,7 +4,7 @@ import { sha1HexOfBlob } from '../patcher/sha1.js';
 import { BigBuffer } from '../patcher/big-buffer.js';
 import { pickRandomShopeeLink } from '../lib/shopee-links.js';
 import { supportsStreamingSave, createSaveStream } from '../lib/save-file-stream.js';
-import { supportsDownloadStream, createDownloadStream } from '../lib/download-stream.js';
+import { supportsOpfsPatch, opfsHasRoomFor, clearOpfsOutput, patchIntoOpfs } from '../patcher/opfs-patch.js';
 import { sfxConfirm, sfxSuccess, sfxSelect, sfxTick, sfxError, sfxCancel } from '../lib/sfx.js';
 import { matchesGame } from '../lib/game-filter.js';
 
@@ -106,9 +106,6 @@ function init() {
   const patchDoneStage1Text = el('patch-done-stage1-text');
   const stage1TextDefault = patchDoneStage1Text.textContent;
   const stage1TextStreamed = 'ไฟล์นี้ถูกบันทึกไปยังตำแหน่งที่คุณเลือกไว้ตอนกดแปะแล้วโดยตรง';
-  const stage1TextDownload =
-    'ไฟล์นี้อยู่ในโฟลเดอร์ที่คุณเลือกตอน Chrome ถาม (ถ้าไม่ได้ถาม จะอยู่ในโฟลเดอร์ "Downloads") — ไฟล์ใหญ่มาก ' +
-    'ถ้าแถบดาวน์โหลดของเบราว์เซอร์ยังหมุนอยู่ รอให้ขึ้นว่าเสร็จก่อนค่อยเปิดเล่น';
 
   if (resultUrl) {
     URL.revokeObjectURL(resultUrl);
@@ -119,6 +116,7 @@ function init() {
   let sourceFile = null;
   let sourceName = '';
   let resultFilename = '';
+  let resultInOpfs = false;
 
   // ── เลือกเกม ──────────────────────────────────────────────
 
@@ -266,15 +264,14 @@ function init() {
     } else if (phase === 'download') {
       applyBtn.textContent = '↓ ดาวน์โหลดไฟล์ภาษาไทย';
       applyBtn.disabled = false;
-    } else if (phase === 'confirm-save') {
-      applyBtn.textContent = '▶ เลือกที่เก็บไฟล์แล้ว เริ่มแปะ';
-      applyBtn.disabled = false;
     }
   }
 
   function closePatchDoneModal() {
     patchDoneModal.classList.remove('open');
-    if (resultUrl) {
+    // ผลลัพธ์ใน OPFS อยู่บนดิสก์ ไม่กินแรม — ไม่ revoke ตอนปิดป๊อปอัป เพราะ Chrome ที่ถามที่บันทึก
+    // อาจยังรอผู้ใช้เลือกที่เก็บ/ยังอ่านไฟล์อยู่ (จะถูกแทนที่เองตอนแปะรอบถัดไป)
+    if (resultUrl && !resultInOpfs) {
       URL.revokeObjectURL(resultUrl);
       resultUrl = null;
     }
@@ -396,23 +393,23 @@ function init() {
   }
 
   /**
-   * คอมพิวเตอร์ + ไฟล์ใหญ่มาก → ดาวน์โหลดแบบสตรีมผ่าน service worker (ADR-019) แทน
-   * showSaveFilePicker() ที่เจอจริงว่าบันทึกขั้นสุดท้ายพังกับไฟล์ 8GB บน Chrome Windows
+   * คอมพิวเตอร์ + ไฟล์ใหญ่มาก → แปะลง OPFS ให้เสร็จก่อน แล้วค่อยกดดาวน์โหลดแบบปกติ (ADR-019)
+   * แทน showSaveFilePicker() ที่เจอจริงว่าบันทึกขั้นสุดท้ายพังกับไฟล์ 8GB บน Chrome Windows
    * มือถือยังใช้ทาง showSaveFilePicker() ตาม ADR-017 เหมือนเดิม (ใช้งานได้จริงอยู่แล้ว)
    */
-  function useDownloadStreamFor(fileSize) {
+  function useOpfsFor(fileSize) {
     return (
       selectedGame?.patch_format === 'ppf' &&
       !isMobileDevice() &&
       fileSize > VERY_BIG_FILE_BYTES &&
-      supportsDownloadStream()
+      supportsOpfsPatch()
     );
   }
 
   function bigFileNoteText(fileSize) {
-    if (useDownloadStreamFor(fileSize)) {
-      return 'ไฟล์นี้ใหญ่มาก — พอกดแปะ เบราว์เซอร์จะเริ่มดาวน์โหลดไฟล์ (ถ้า Chrome ถามที่เก็บไฟล์ ให้เลือกก่อน) ' +
-        'แล้วกดปุ่มเริ่มแปะอีกครั้ง ระหว่างแปะไม่ต้องพึ่งแรมเยอะ อย่าเพิ่งปิดแท็บจนกว่าจะขึ้นว่าแปะเสร็จนะครับ';
+    if (useOpfsFor(fileSize)) {
+      return 'ไฟล์นี้ใหญ่มาก — ระหว่างแปะไม่ต้องพึ่งแรมเยอะ แต่ต้องมีที่ว่างในไดรฟ์ C: อย่างน้อยเท่าขนาดไฟล์เกม ' +
+        'แปะเสร็จแล้วกดปุ่มดาวน์โหลดเพื่อเลือกที่เก็บไฟล์ อย่าเพิ่งปิดแท็บจนกว่าจะดาวน์โหลดเสร็จนะครับ';
     }
     if (useStreamingFor(fileSize)) {
       return 'ไฟล์นี้ใหญ่มาก — เบราว์เซอร์รุ่นนี้รองรับการเขียนไฟล์ลงดิสก์ตรงๆ ระหว่างแปะ ไม่ต้องพึ่งแรมเยอะเหมือนปกติ ' +
@@ -426,53 +423,27 @@ function init() {
 
   // ── แปะแพตช์ ──────────────────────────────────────────────
 
-  /** ปุ่มแปะเปลี่ยนเป็น "เลือกที่เก็บไฟล์แล้ว เริ่มแปะ" แล้วรอผู้ใช้กด — คืน false ถ้าเบราว์เซอร์
-     ยกเลิกการดาวน์โหลดไปก่อน (ผู้ใช้กดยกเลิกกล่อง "บันทึกเป็น") */
-  let confirmSaveLocation = null;
-  async function waitForSaveLocation(stream) {
-    const noteHidden = bigFileNote.hidden;
-    const noteText = bigFileNote.textContent;
-    bigFileNote.hidden = false;
-    bigFileNote.textContent =
-      'ถ้า Chrome เด้งหน้าต่างให้เลือกที่เก็บไฟล์ ให้เลือกที่เก็บให้เรียบร้อยก่อน แล้วค่อยกดปุ่มด้านล่างเพื่อเริ่มแปะ ' +
-      '(ถ้าไม่มีหน้าต่างเด้งขึ้นมา กดปุ่มได้เลย ไฟล์จะไปอยู่ในโฟลเดอร์ "Downloads")';
-    setApplyPhase('confirm-save');
-
-    const confirmed = await Promise.race([
-      new Promise((resolve) => {
-        confirmSaveLocation = () => resolve(true);
-      }),
-      stream.canceled.then(() => false),
-    ]);
-
-    confirmSaveLocation = null;
-    bigFileNote.hidden = noteHidden;
-    bigFileNote.textContent = noteText;
-    return confirmed;
-  }
-
   async function runPatch() {
     if (!selectedGame || !sourceFile) return;
 
     sfxConfirm();
     runError.hidden = true;
 
-    // เปิดปลายทางของไฟล์ก่อนเริ่มทำอะไรทั้งนั้น (ต้องเรียกตอนยังอยู่ในจังหวะ user gesture จาก
-    // การคลิกปุ่มโดยตรง เรียกทีหลังหลัง await เครือข่ายไปแล้วบางเบราว์เซอร์จะปฏิเสธ)
-    // stream = { name, writable } — streamKind บอกว่าเป็นทางไหน ('download' หรือ 'save')
-    let stream = null;
-    let streamKind = null;
-    if (useDownloadStreamFor(sourceFile.size)) {
-      // service worker ไม่ตอบ (เช่นยังเป็นตัวเก่าจากก่อนอัปเดตเว็บ) → ถอยไปใช้ทางกล่อง Save As
-      stream = await createDownloadStream(thaiFileName(sourceName), sourceFile.size).catch(() => null);
-      if (stream) streamKind = 'download';
+    // ทาง OPFS ต้องมีที่ว่างพอใส่ไฟล์ผลลัพธ์ทั้งไฟล์ ไม่พอก็ถอยไปทางกล่อง Save As แทน
+    // (ลบผลลัพธ์รอบก่อนทิ้งก่อนนับที่ว่าง — ผู้ใช้เริ่มแปะรอบใหม่แล้ว)
+    let useOpfs = false;
+    if (useOpfsFor(sourceFile.size)) {
+      await clearOpfsOutput();
+      useOpfs = await opfsHasRoomFor(sourceFile.size);
     }
-    // ผู้ใช้กดยกเลิกกล่อง Save As ได้ ไม่ใช่ error จริง แค่กลับไปหน้าเดิมเงียบๆ
-    if (!stream && useStreamingFor(sourceFile.size)) {
+
+    // ทางกล่อง Save As: เปิดกล่องก่อนเริ่มทำอะไรทั้งนั้น (ต้องเรียกตอนยังอยู่ในจังหวะ user gesture
+    // จากการคลิกปุ่มโดยตรง เรียกทีหลังหลัง await เครือข่ายไปแล้วบางเบราว์เซอร์จะปฏิเสธ) — ผู้ใช้
+    // กดยกเลิกได้ ไม่ใช่ error จริง แค่กลับไปหน้าเดิมเงียบๆ
+    let stream = null;
+    if (!useOpfs && useStreamingFor(sourceFile.size)) {
       try {
-        const saved = await createSaveStream(thaiFileName(sourceName));
-        stream = { name: saved.handle.name, writable: saved.writable };
-        streamKind = 'save';
+        stream = await createSaveStream(thaiFileName(sourceName));
       } catch (error) {
         if (error?.name === 'AbortError') return;
         sfxError();
@@ -480,22 +451,6 @@ function init() {
         runError.textContent = `เปิดกล่องเลือกที่เก็บไฟล์ไม่สำเร็จ: ${error.message}`;
         return;
       }
-    }
-
-    // ทางดาวน์โหลด: Chrome ที่ตั้ง "ถามที่บันทึกไฟล์ทุกครั้ง" จะเด้งกล่อง "บันทึกเป็น" ตอนนี้
-    // ห้ามส่งข้อมูลเข้าไปก่อนผู้ใช้เลือกที่เก็บเสร็จ — เจอจริงว่าไฟล์ 8GB ที่ไหลเข้าไปก่อนเลือก
-    // แล้วค่อยย้ายที่เก็บกลางทางออกมาเสีย จึงรอให้ผู้ใช้กดยืนยันก่อนค่อยเริ่มแปะ
-    if (streamKind === 'download') {
-      const confirmed = await waitForSaveLocation(stream);
-      if (!confirmed) {
-        await stream.writable.abort().catch(() => {});
-        sfxError();
-        runError.hidden = false;
-        runError.textContent = 'ยกเลิกการบันทึกไฟล์แล้ว — กดแปะใหม่ได้เลยเมื่อพร้อม';
-        setApplyPhase('patch');
-        return;
-      }
-      sfxConfirm();
     }
 
     setApplyPhase('running');
@@ -514,9 +469,36 @@ function init() {
         updateProgress('กำลังโหลดไฟล์แพตช์...', total ? loaded / total : null);
       });
 
+      if (useOpfs) {
+        // แปะลงไฟล์ใน OPFS ทีละก้อน (ไม่ต้องรวมทั้งไฟล์ไว้ในแรม) ให้เสร็จทั้งไฟล์ก่อน แล้วค่อยให้
+        // ผู้ใช้กดดาวน์โหลดไฟล์ที่เสร็จแล้วแบบปกติ — ดู ADR-019
+        const result = await patchIntoOpfs(sourceFile, patchBytes, (written, total) => {
+          updateProgress('กำลังแปะแพตช์...', total ? written / total : null);
+        });
+        // เจอจริงในโหมดไม่ระบุตัวตน: OPFS อยู่ในแรมและเล็ก เขียนไม่ครบโดยไม่มี error — ห้ามปล่อย
+        // ไฟล์ไม่ครบให้ผู้ใช้ดาวน์โหลดไปเด็ดขาด (PPF ไม่เปลี่ยนขนาดไฟล์ ผลลัพธ์ต้องเท่าต้นฉบับ)
+        if (result.size !== sourceFile.size) {
+          const error = new Error('opfs size mismatch');
+          error.userMessage =
+            'เบราว์เซอร์เก็บไฟล์ที่แปะได้ไม่ครบ — ถ้าเปิดหน้าเว็บในโหมดไม่ระบุตัวตน (Incognito) ให้เปิดหน้าต่างปกติแล้วแปะใหม่ ' +
+            'หรือถ้าที่ว่างในไดรฟ์ C: เหลือน้อย ลองลบไฟล์ที่ไม่ใช้แล้วกดแปะอีกครั้ง';
+          throw error;
+        }
+
+        if (resultUrl) URL.revokeObjectURL(resultUrl);
+        resultUrl = URL.createObjectURL(result);
+        resultFilename = thaiFileName(sourceName);
+        resultInOpfs = true;
+
+        hideProgress();
+        sfxSuccess();
+        setApplyPhase('download');
+        return;
+      }
+
       if (stream) {
-        // อ่านไฟล์ต้นฉบับทีละก้อนแล้วเขียนผลลัพธ์ออกปลายทางทันที ไม่ต้องรวมทั้งไฟล์
-        // ไว้ในแรมเลยสักครั้งเดียว (ต่างจากทาง BigBuffer ด้านล่าง) — ดู ADR-017/ADR-019
+        // อ่านไฟล์ต้นฉบับทีละก้อนแล้วเขียนผลลัพธ์ลงไฟล์ที่เลือกไว้ทันที ไม่ต้องรวมทั้งไฟล์
+        // ไว้ในแรมเลยสักครั้งเดียว (ต่างจากทาง BigBuffer ด้านล่าง) — ดู ADR-017
         await streamApplyPPF(sourceFile, patchBytes, stream.writable, (written, total) => {
           updateProgress('กำลังแปะและบันทึกไฟล์...', total ? written / total : null);
         });
@@ -532,15 +514,15 @@ function init() {
           // ไฟล์ใหญ่ระดับ 8GB เจอจริงว่าขั้นเปลี่ยนชื่อนี้พัง (InvalidStateError — น่าจะเพราะโปรแกรม
           // สแกนไวรัสยังถือไฟล์อยู่) ทั้งที่เนื้อไฟล์ .crswap ถูกต้องครบแล้ว และ Chrome ไม่ลบทิ้งให้
           // จึงบอกวิธีกู้ไฟล์แทนข้อความ error ภาษาอังกฤษที่ผู้ใช้อ่านไม่รู้เรื่อง
-          if (streamKind === 'save') error.userMessage = swapRenameFailedMessage(stream.name);
+          error.userMessage = swapRenameFailedMessage(stream.handle.name);
           throw error;
         }
 
-        resultFilename = stream.name;
+        resultFilename = stream.handle.name;
         hideProgress();
         sfxSuccess();
         setApplyPhase('patch'); // บันทึกเสร็จแล้วในตัว ไม่ต้องกดดาวน์โหลดซ้ำ พร้อมแปะไฟล์ถัดไปได้เลย
-        showPatchDoneGuide({ streamed: streamKind });
+        showPatchDoneGuide({ streamed: true });
         return;
       }
 
@@ -563,6 +545,7 @@ function init() {
       if (resultUrl) URL.revokeObjectURL(resultUrl);
       resultUrl = URL.createObjectURL(result.toBlob());
       resultFilename = thaiFileName(sourceName);
+      resultInOpfs = false;
 
       hideProgress();
       sfxSuccess();
@@ -571,6 +554,11 @@ function init() {
       hideProgress();
       // abort ไม่ใช่ close — ทิ้งไฟล์ครึ่งๆ กลางๆ แทนที่จะบันทึกไฟล์ที่ไม่ครบไว้ให้ผู้ใช้เข้าใจผิด
       if (stream) await stream.writable.abort(error).catch(() => {});
+      if (useOpfs) await clearOpfsOutput();
+      if (error?.name === 'QuotaExceededError') {
+        error.userMessage =
+          'ที่ว่างในเครื่องไม่พอสำหรับแปะไฟล์นี้ — ต้องมีที่ว่างในไดรฟ์ C: อย่างน้อยเท่าขนาดไฟล์เกม ลองลบไฟล์ที่ไม่ใช้แล้วกดแปะใหม่';
+      }
       sfxError();
       runError.hidden = false;
       runError.textContent =
@@ -664,8 +652,7 @@ function init() {
   function showPatchDoneGuide({ streamed }) {
     showFileStatus('none');
 
-    patchDoneStage1Text.textContent =
-      streamed === 'save' ? stage1TextStreamed : streamed === 'download' ? stage1TextDownload : stage1TextDefault;
+    patchDoneStage1Text.textContent = streamed ? stage1TextStreamed : stage1TextDefault;
     patchDoneTitle.textContent = selectedGame.title;
     patchDoneFilename.textContent = resultFilename;
     if (selectedGame.cover_url) {
@@ -687,6 +674,10 @@ function init() {
   }
 
   // ── เริ่มทำงาน ────────────────────────────────────────────
+
+  // ผลลัพธ์ไฟล์ใหญ่รอบก่อนที่ค้างอยู่ใน OPFS (ไฟล์ละหลาย GB) — ลบเฉพาะที่เก่าแล้ว
+  // เผื่อผู้ใช้ยังดาวน์โหลดรอบก่อนไม่เสร็จแล้วเปิดหน้านี้ซ้ำ
+  if (supportsOpfsPatch()) clearOpfsOutput({ onlyIfStale: true });
 
   // รูปปกโหลดไม่ขึ้น (เช่น Supabase ล่ม) → ซ่อนรูปทิ้ง เหลือภาพแทนปกที่อยู่ข้างใต้
   // แทนที่จะโชว์ไอคอนรูปแตกกับข้อความ alt ล้นกรอบ
@@ -768,8 +759,6 @@ function init() {
   applyBtn.addEventListener('click', () => {
     if (applyBtn.dataset.phase === 'download') {
       downloadAndShowGuide();
-    } else if (applyBtn.dataset.phase === 'confirm-save') {
-      confirmSaveLocation?.();
     } else {
       runPatch();
     }
